@@ -1164,6 +1164,22 @@ export default function App() {
                       </div>
                     ) : (
                       <>
+                        <div className="flex justify-between items-center transition-all mt-4">
+                            <h2 className="text-[11px] font-black tracking-[0.2em] uppercase text-app-muted shrink-0">
+                              System Status
+                            </h2>
+                            <div className="h-px bg-slate-100 w-full mx-4" />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold text-app-muted uppercase tracking-wider mb-1">Logic Engine</p>
+                                    <p className="text-xl font-black text-app-ink">Healthy</p>
+                                </div>
+                                <div className="h-2 w-2 bg-app-healthy rounded-full animate-pulse" />
+                            </div>
+                        </div>
 
                         {[UrgencyState.CRITICAL, UrgencyState.UPCOMING, UrgencyState.HEALTHY].map((urgency, i) => {
                             const filtered = sortedComponents.filter(c => c.status.urgency === urgency);
@@ -1194,6 +1210,75 @@ export default function App() {
                                 </div>
                             );
                         })}
+
+                        <div className="mt-8 pt-8 border-t border-slate-100 pb-12">
+                            <h4 className="text-[11px] font-black text-app-muted uppercase tracking-widest mb-4">Component Insights</h4>
+                            <div className="space-y-4">
+                                {components.map((comp, cid) => (
+                                    <div key={`insight-comp-${comp.id}-${cid}`} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-slate-200 transition-colors">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-sm tracking-tight text-app-ink">{comp.name}</p>
+                                                <button 
+                                                    onClick={() => handleDeleteComponent(comp.id)}
+                                                    className="p-1 text-slate-300 hover:text-app-critical transition-colors"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                                {comp.purchaseDate && (
+                                                    <div className="flex items-center gap-1 text-xs font-bold text-slate-400 bg-slate-100/50 px-1.5 py-0.5 rounded">
+                                                        <Calendar className="w-2.5 h-2.5" />
+                                                        <span>{new Date(comp.purchaseDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${comp.trackingMode === TrackingMode.AUTO_EWMA ? 'badge-smart' : 'badge-manual'}`}>
+                                                {comp.trackingMode === TrackingMode.AUTO_EWMA ? 'Smart' : 'Manual'}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Usage Status</p>
+                                                        <p className="text-sm font-black text-app-ink">
+                                                            {comp.currentAccumulatedUsage} <span className="text-slate-300 font-medium">/</span> {Math.round(comp.currentPredictedInterval || comp.staticIntervalUsage || 0)}
+                                                            <span className="ml-1 text-[10px] text-app-muted font-bold uppercase">{comp.metricType}</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Health</p>
+                                                    <p className={`text-xs font-bold ${calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).urgency === UrgencyState.CRITICAL ? 'text-app-critical' : 'text-app-healthy'}`}>
+                                                        {calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).urgency === UrgencyState.CRITICAL ? 'Action Req' : 'Optimal'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <StatusBar 
+                                                percentage={calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).percentage} 
+                                                theme={calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).urgency === UrgencyState.CRITICAL ? 'critical' : 'healthy'}
+                                            />
+                                            <div className="flex justify-between items-center text-[10px]">
+                                                <p className="font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1">
+                                                    Cost Estimate
+                                                    {logs.some(l => l.componentId === comp.id) && (
+                                                        <button onClick={() => fetchCostPrediction(comp.id)} className="hover:text-app-smart transition-colors p-0.5">
+                                                            <Zap className="w-2.5 h-2.5 fill-current" />
+                                                        </button>
+                                                    )}
+                                                </p>
+                                                <p className="font-black text-app-ink">
+                                                    {formatCurrency(comp.estimatedCost)}
+                                                    {predictedCost && predictionCompId === comp.id && (
+                                                        <span className="ml-1 text-app-smart">(AI: {formatCurrency(predictedCost)})</span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                       </>
                     )
                 )}
@@ -1685,80 +1770,8 @@ export default function App() {
           </nav>
         </div>
 
-        {/* Stats Panel / Desktop Content */}
-        <div className="flex flex-col gap-6 h-full">
-
-                <div className="flex-1 overflow-y-auto pr-2">
-                    <h4 className="text-[11px] font-black text-app-muted uppercase tracking-widest mb-4">Component Insights</h4>
-                    <div className="space-y-4">
-                        {components.map((comp, cid) => (
-                            <div key={`insight-comp-${comp.id}-${cid}`} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-slate-200 transition-colors">
-                                <div className="flex justify-between items-center mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-bold text-sm tracking-tight text-app-ink">{comp.name}</p>
-                                        <button 
-                                            onClick={() => handleDeleteComponent(comp.id)}
-                                            className="p-1 text-slate-300 hover:text-app-critical transition-colors"
-                                        >
-                                            <Trash2 className="w-3 h-3" />
-                                        </button>
-                                        {comp.purchaseDate && (
-                                            <div className="flex items-center gap-1 text-xs font-bold text-slate-400 bg-slate-100/50 px-1.5 py-0.5 rounded">
-                                                <Calendar className="w-2.5 h-2.5" />
-                                                <span>{new Date(comp.purchaseDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${comp.trackingMode === TrackingMode.AUTO_EWMA ? 'badge-smart' : 'badge-manual'}`}>
-                                        {comp.trackingMode === TrackingMode.AUTO_EWMA ? 'Smart' : 'Manual'}
-                                    </span>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div>
-                                                <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Usage Status</p>
-                                                <p className="text-sm font-black text-app-ink">
-                                                    {comp.currentAccumulatedUsage} <span className="text-slate-300 font-medium">/</span> {Math.round(comp.currentPredictedInterval || comp.staticIntervalUsage || 0)}
-                                                    <span className="ml-1 text-[10px] text-app-muted font-bold uppercase">{comp.metricType}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Health</p>
-                                            <p className={`text-xs font-bold ${calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).urgency === UrgencyState.CRITICAL ? 'text-app-critical' : 'text-app-healthy'}`}>
-                                                {calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).urgency === UrgencyState.CRITICAL ? 'Action Req' : 'Optimal'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <StatusBar 
-                                        percentage={calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).percentage} 
-                                        theme={calculateMaintenanceStatus(comp.trackingMode, comp.currentAccumulatedUsage, comp.staticIntervalUsage || 1000, new Date(comp.lastServiceDate), comp.staticIntervalTime || 0, comp.currentPredictedInterval).urgency === UrgencyState.CRITICAL ? 'critical' : 'healthy'}
-                                    />
-                                    <div className="flex justify-between items-center text-[10px]">
-                                        <p className="font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1">
-                                            Cost Estimate
-                                            {logs.some(l => l.componentId === comp.id) && (
-                                                <button onClick={() => fetchCostPrediction(comp.id)} className="hover:text-app-smart transition-colors p-0.5">
-                                                    <Zap className="w-2.5 h-2.5 fill-current" />
-                                                </button>
-                                            )}
-                                        </p>
-                                        <p className="font-black text-app-ink">
-                                            {formatCurrency(comp.estimatedCost)}
-                                            {predictedCost && predictionCompId === comp.id && (
-                                                <span className="ml-1 text-app-smart">(AI: {formatCurrency(predictedCost)})</span>
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-        </div>
+        {/* Bottom spacer for desktop */}
+        <div className="h-10 lg:hidden" />
       </main>
 
       {/* Active Service Modal */}
