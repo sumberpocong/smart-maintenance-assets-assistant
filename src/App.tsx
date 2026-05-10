@@ -198,6 +198,20 @@ export default function App() {
     return assets.filter(a => selectedCategories.includes(a.category));
   }, [assets, selectedCategories]);
 
+  const componentsWithStatus = useMemo(() => {
+    return components.map(c => ({
+      ...c,
+      status: calculateMaintenanceStatus(
+        c.trackingMode,
+        c.currentAccumulatedUsage,
+        c.staticIntervalUsage || 1000,
+        new Date(c.lastServiceDate),
+        c.staticIntervalTime || 0,
+        c.currentPredictedInterval
+      )
+    }));
+  }, [components]);
+
   const stats = useMemo(() => {
     const relevantAssets = filteredAssets;
     const relevantAssetIds = new Set(relevantAssets.map(a => a.id));
@@ -222,21 +236,7 @@ export default function App() {
       totalSpent,
       predictedCost
     };
-  }, [filteredAssets, components, logs]);
-
-  const componentsWithStatus = useMemo(() => {
-    return components.map(c => ({
-      ...c,
-      status: calculateMaintenanceStatus(
-        c.trackingMode,
-        c.currentAccumulatedUsage,
-        c.staticIntervalUsage || 1000,
-        new Date(c.lastServiceDate),
-        c.staticIntervalTime || 0,
-        c.currentPredictedInterval
-      )
-    }));
-  }, [components]);
+  }, [filteredAssets, components, logs, componentsWithStatus]);
 
   const sortedComponents = useMemo(() => {
     const relevantAssetIds = new Set(filteredAssets.map(a => a.id));
