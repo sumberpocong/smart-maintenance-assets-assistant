@@ -1,0 +1,6 @@
+{
+  "name": "Smart Maintenance Assets Assistant",
+  "description": "Smart notification-first maintenance tracker using EWMA predictive analytics and dual-threshold scheduling for vehicles and appliances.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
