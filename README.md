@@ -1,20 +1,29 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Smart Maintenance Assets Assistant
 
-# Run and deploy your AI Studio app
+Production-ready maintenance tracker with AI-powered suggestions and Firestore persistence.
 
-This contains everything you need to run your app locally.
+## 🚀 Deployment to GitHub
 
-View your app in AI Studio: https://ai.studio/apps/d468da65-171b-460b-8f81-9a87cb78c2ed
+To deploy this app using GitHub:
 
-## Run Locally
+1.  **Create a new repository** on GitHub at [https://github.com/sumberpocong/smart-maintenance-assets-assistant](https://github.com/sumberpocong/smart-maintenance-assets-assistant).
+2.  **Push the code**:
+    ```bash
+    git remote add origin https://github.com/sumberpocong/smart-maintenance-assets-assistant.git
+    git branch -M main
+    git push -u origin main
+    ```
+3.  **Setup Secrets**:
+    - Go to `Settings > Secrets and variables > Actions`.
+    - Add `GCP_SA_KEY`: The JSON key of your Google Cloud Service Account with `Cloud Run Admin` and `Storage Admin` roles.
 
-**Prerequisites:**  Node.js
+## 🛠 Features
+- **AI Suggested Components**: Automatically predicts maintenance items based on asset name/category.
+- **Dynamic Odometer Tracking**: Enforces readings for vehicles (Motor/Car, Manual/Matic).
+- **Firestore Support**: Scalable data persistence on Google Cloud.
+- **Premium UI**: Dark mode, custom modals, and smooth animations.
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 💻 Local Development
+1. `npm install`
+2. `cp .env.example .env` (Add your Gemini API Key)
+3. `npm run dev`
