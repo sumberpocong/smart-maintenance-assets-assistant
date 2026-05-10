@@ -57,6 +57,9 @@
   --color-app-healthy: #10B981;
   --color-app-smart: #3B82F6;
   --color-app-manual: #8B5CF6;
+
+  --shadow-enterprise: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-enterprise-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 @layer base {
@@ -86,4 +89,20 @@
 
 .timeline-dot {
   @apply absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-app-ink;
+}
+
+.glass-nav {
+  @apply bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50;
+}
+
+.enterprise-card {
+  @apply bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-enterprise transition-all duration-300;
+}
+
+.metric-value {
+  @apply text-3xl font-black tracking-tighter leading-none;
+}
+
+.metric-label {
+  @apply text-[10px] font-black uppercase tracking-[0.15em] text-app-muted;
 }

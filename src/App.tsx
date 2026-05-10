@@ -863,104 +863,128 @@ export default function App() {
           <div className="flex-1 overflow-y-auto px-6 pb-32">
             {activeTab === 'home' ? (
               <div className="space-y-6 pt-4">
-                <div className="flex justify-between items-center transition-all">
-                    <h2 className="text-[11px] font-black tracking-[0.2em] uppercase text-app-muted shrink-0">
-                      Overview
-                    </h2>
-                    <div className="h-px bg-slate-100 w-full mx-4" />
-                </div>
-
-                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
-                   <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Zap className="w-4 h-4 text-blue-600 fill-blue-600" />
+                {/* Enterprise Maintenance Pulse */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="enterprise-card p-6 border-l-4 border-l-app-smart"
+                >
+                   <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-app-smart/10 rounded-xl">
+                          <Zap className="w-5 h-5 text-app-smart fill-app-smart/20" />
+                        </div>
+                        <div>
+                          <h4 className="text-[10px] font-black text-app-muted uppercase tracking-[0.2em]">{language === 'en' ? 'Health Pulse' : 'Denyut Kesehatan'}</h4>
+                          <p className="text-sm font-bold text-app-ink">Infrastructure status</p>
+                        </div>
                       </div>
-                      <h4 className="text-xs font-black text-app-ink uppercase tracking-widest">Maintenance Pulse</h4>
+                      <div className="flex items-center gap-1.5 px-3 py-1 bg-app-healthy/10 rounded-full border border-app-healthy/20">
+                        <div className="w-1.5 h-1.5 bg-app-healthy rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black text-app-healthy uppercase tracking-wider">
+                          {(stats.urgentCount === 0 ? 100 : Math.max(0, 100 - (stats.urgentCount * 15)))}% Stable
+                        </span>
+                      </div>
                    </div>
-                   <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                     Infrastructure health is <strong>{(stats.urgentCount === 0 ? 100 : Math.max(0, 100 - (stats.urgentCount * 15)))}%</strong> stable. 
-                     The system is currently tracking <strong>{stats.totalComponents}</strong> components with Smart Calibration active.
+                   <p className="text-xs text-app-muted font-medium leading-relaxed">
+                     System is currently monitoring <span className="text-app-ink font-bold">{stats.totalComponents}</span> high-precision components. 
+                     Calibration is active and optimized for <span className="text-app-ink font-bold">{stats.totalAssets}</span> managed assets.
                    </p>
-                </div>
+                </motion.div>
 
-                {/* Financial Overview First */}
-                <div className="bg-app-ink p-5 rounded-3xl shadow-xl flex flex-col relative overflow-hidden group transition-all duration-500">
-                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
+                {/* Enterprise Financial Overview */}
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-slate-950 p-6 rounded-[2.5rem] shadow-shadow-enterprise-lg flex flex-col relative overflow-hidden group"
+                >
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-app-smart/10 rounded-full blur-[80px]" />
                     
-                    <div className="flex justify-between items-center mb-4 relative z-10">
-                      <h3 className="text-white text-[10px] font-black opacity-60 uppercase tracking-widest">{language === 'en' ? 'Expenditure Overview' : 'Ringkasan Pengeluaran'}</h3>
-                      <button 
-                        onClick={() => setActiveTab('settings')}
-                        className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        <DollarSign className="w-3.5 h-3.5 text-white opacity-80" />
-                      </button>
-                    </div>
-    
-                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">{language === 'en' ? 'Invested' : 'Investasi'}</p>
-                        <p className="text-2xl font-black text-white tracking-tighter leading-none">{formatCurrency(stats.totalSpent)}</p>
+                    <div className="flex justify-between items-center mb-6 relative z-10">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-4 bg-app-smart rounded-full" />
+                        <h3 className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em]">{language === 'en' ? 'Expenditure Overview' : 'Ringkasan Pengeluaran'}</h3>
                       </div>
-                      <div className="space-y-0.5 text-right border-l border-white/10 pl-4">
-                        <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">{language === 'en' ? 'Projected' : 'Proyeksi'}</p>
-                        <p className="text-2xl font-black text-app-smart tracking-tighter leading-none">{formatCurrency(stats.predictedCost)}</p>
+                      <div className="px-2 py-1 bg-white/5 rounded-lg border border-white/10">
+                         <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">IDR</span>
                       </div>
                     </div>
     
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between relative z-10">
-                        <div className="flex-1 h-1 bg-white/10 rounded-full mr-4 overflow-hidden">
+                    <div className="grid grid-cols-2 gap-8 relative z-10">
+                      <div className="space-y-1">
+                        <p className="metric-label text-white/30">{language === 'en' ? 'Invested' : 'Investasi'}</p>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-black text-white tracking-tighter">{formatCurrency(stats.totalSpent)}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1 text-right border-l border-white/5 pl-8">
+                        <p className="metric-label text-white/30">{language === 'en' ? 'Projected' : 'Proyeksi'}</p>
+                        <div className="flex items-baseline gap-1 justify-end">
+                          <span className="text-3xl font-black text-app-smart tracking-tighter">{formatCurrency(stats.predictedCost)}</span>
+                        </div>
+                      </div>
+                    </div>
+    
+                    <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
+                        <div className="flex justify-between items-end mb-2">
+                           <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Maintenance Ratio</p>
+                           <p className="text-xs font-black text-white">
+                                {stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100).toFixed(0) : 0}%
+                           </p>
+                        </div>
+                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                             <motion.div 
                                 initial={{ width: 0 }}
                                 animate={{ width: `${Math.min(stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100) : 0, 100)}%` }}
-                                className="h-full bg-app-smart"
+                                className="h-full bg-app-smart shadow-[0_0_15px_rgba(59,130,246,0.5)]"
                             />
                         </div>
-                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
-                            {language === 'en' ? 'Ratio' : 'Rasio'}: {stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100).toFixed(0) : 0}%
-                        </p>
                     </div>
-                </div>
+                </motion.div>
 
-                <div className="flex justify-between items-center transition-all">
-                    <h2 className="text-[11px] font-black tracking-[0.2em] uppercase text-app-muted shrink-0">
-                      Infrastructure Stats
-                    </h2>
-                    <div className="h-px bg-slate-100 w-full mx-4" />
-                </div>
-
-                {/* Quick Stats Grid */}
+                {/* Enterprise Quick Stats Grid */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-slate-300 transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-slate-100 transition-colors">
-                        <Box className="w-4 h-4 text-app-ink" />
-                      </div>
-                      <p className="text-[10px] font-black text-app-muted uppercase tracking-widest text-right">Managed<br/>Assets</p>
-                    </div>
-                    <div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-black text-app-ink tracking-tight">{stats.totalAssets}</span>
-                        <span className="text-[11px] font-bold text-slate-300 uppercase">Items</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div 
-                    onClick={() => setActiveTab('status')}
-                    className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-slate-300 transition-all cursor-pointer active:scale-95"
+                  <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="enterprise-card p-6 flex flex-col justify-between group hover:border-app-smart/30 transition-all"
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <div className={`p-2.5 rounded-xl transition-colors ${stats.urgentCount > 0 ? 'bg-rose-50' : 'bg-slate-50'}`}>
-                        <AlertCircle className={`w-4 h-4 ${stats.urgentCount > 0 ? 'text-app-critical' : 'text-slate-300'}`} />
+                      <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl group-hover:scale-110 transition-transform">
+                        <Box className="w-5 h-5 text-app-ink" />
                       </div>
-                      <p className="text-[10px] font-black text-app-muted uppercase tracking-widest text-right">Attention<br/>Required</p>
+                      <p className="metric-label text-right">Managed<br/>Assets</p>
                     </div>
                     <div>
-                      <span className={`text-3xl font-black tracking-tight ${stats.urgentCount > 0 ? 'text-app-critical' : 'text-app-ink'}`}>{stats.urgentCount}</span>
-                      <span className="text-[11px] font-bold text-slate-300 uppercase ml-1">Tasks</span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="metric-value text-app-ink">{stats.totalAssets}</span>
+                        <span className="text-[10px] font-bold text-app-muted uppercase tracking-wider">Units</span>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
+
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    onClick={() => setActiveTab('status')}
+                    className={`enterprise-card p-6 flex flex-col justify-between group cursor-pointer active:scale-95 transition-all ${stats.urgentCount > 0 ? 'border-app-critical/20 hover:border-app-critical/40' : 'hover:border-app-smart/30'}`}
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`p-2.5 rounded-xl transition-colors ${stats.urgentCount > 0 ? 'bg-app-critical/10' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                        <AlertCircle className={`w-5 h-5 ${stats.urgentCount > 0 ? 'text-app-critical' : 'text-app-muted'}`} />
+                      </div>
+                      <p className="metric-label text-right">Attention<br/>Required</p>
+                    </div>
+                    <div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className={`metric-value ${stats.urgentCount > 0 ? 'text-app-critical' : 'text-app-ink'}`}>{stats.urgentCount}</span>
+                        <span className="text-[10px] font-bold text-app-muted uppercase tracking-wider">Tasks</span>
+                      </div>
+                    </div>
+                  </motion.div>
                 </div>
 
               </div>
@@ -1717,31 +1741,52 @@ export default function App() {
 
 
           {/* Mobile Nav Bar Simulation */}
-          <nav className="h-16 bg-white/90 backdrop-blur-lg flex justify-around items-center border-t border-slate-100 px-4">
-            <NavItem 
-                active={activeTab === 'home'} 
-                onClick={() => setActiveTab('home')}
-                icon={<Home className="w-4.5 h-4.5" />} 
-                label="Overview" 
-            />
-            <NavItem 
-                active={activeTab === 'status'} 
-                onClick={() => setActiveTab('status')}
-                icon={<Zap className="w-4.5 h-4.5" />} 
-                label="Status" 
-            />
-            <NavItem 
-                active={activeTab === 'assets'} 
-                onClick={() => setActiveTab('assets')}
-                icon={<Box className="w-4.5 h-4.5" />} 
-                label="Assets" 
-            />
-            <NavItem 
-                active={activeTab === 'settings'} 
-                onClick={() => setActiveTab('settings')}
-                icon={<Settings className="w-4.5 h-4.5" />} 
-                label="Settings" 
-            />
+          {/* Floating Action Button (Center) */}
+          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setIsAddingAsset(true)}
+              className="w-14 h-14 bg-app-smart rounded-full flex items-center justify-center text-white shadow-shadow-enterprise-lg border-4 border-white dark:border-slate-950 transition-all"
+            >
+              <Plus className="w-7 h-7" />
+            </motion.button>
+          </div>
+
+          {/* Redesigned Bottom Nav Bar */}
+          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg h-16 glass-nav rounded-3xl flex items-center justify-between px-6 z-40">
+            <div className="flex flex-1 justify-around items-center">
+              <NavItem 
+                  active={activeTab === 'home'} 
+                  onClick={() => setActiveTab('home')}
+                  icon={<Home className="w-5 h-5" />} 
+                  label="Overview" 
+              />
+              <NavItem 
+                  active={activeTab === 'status'} 
+                  onClick={() => setActiveTab('status')}
+                  icon={<Zap className="w-5 h-5" />} 
+                  label="Status" 
+              />
+            </div>
+            
+            {/* Center Spacer for FAB */}
+            <div className="w-16 shrink-0" />
+
+            <div className="flex flex-1 justify-around items-center">
+              <NavItem 
+                  active={activeTab === 'assets'} 
+                  onClick={() => setActiveTab('assets')}
+                  icon={<Box className="w-5 h-5" />} 
+                  label="Assets" 
+              />
+              <NavItem 
+                  active={activeTab === 'settings'} 
+                  onClick={() => setActiveTab('settings')}
+                  icon={<Settings className="w-5 h-5" />} 
+                  label="Settings" 
+              />
+            </div>
           </nav>
         </div>
 
@@ -2678,13 +2723,22 @@ function StatusBar({ percentage, theme = 'default' }: { percentage: number; them
 function NavItem({ icon, label, active = false, onClick }: NavItemProps) {
   return (
     <button 
-      onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 transition-all group ${active ? 'scale-110' : 'opacity-40 hover:opacity-100'}`}
+        onClick={onClick} 
+        className={`flex flex-col items-center gap-1 transition-all relative ${active ? 'text-app-smart' : 'text-app-muted'}`}
     >
-      <div className={`p-1.5 rounded-lg transition-colors ${active ? 'text-app-ink bg-slate-100' : 'text-app-muted'}`}>
-        {icon}
-      </div>
-      <span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-app-ink' : 'text-app-muted'}`}>{label}</span>
+        <motion.div 
+            animate={{ y: active ? -2 : 0, scale: active ? 1.1 : 1 }}
+            className="p-1"
+        >
+            {icon}
+        </motion.div>
+        <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${active ? 'opacity-100' : 'opacity-40'}`}>{label}</span>
+        {active && (
+            <motion.div 
+                layoutId="nav-dot"
+                className="absolute -top-1 w-1 h-1 bg-app-smart rounded-full"
+            />
+        )}
     </button>
   );
 }

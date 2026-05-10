@@ -87,17 +87,42 @@ export class JsonRepository implements StorageRepository {
     await fs.promises.rename(tmp, this.dbPath);
   }
 
+  private cleanCategories(cats: string[]): string[] {
+    const mapping: Record<string, string> = {
+      'Automotive': 'Vehicle',
+      'Car (Manual)': 'Vehicle',
+      'Car (Matic)': 'Vehicle',
+      'Car': 'Vehicle',
+      'Motor': 'Motorcycle (Manual)',
+      'Motor (Manual)': 'Motorcycle (Manual)',
+      'Motor (Matic)': 'Motorcycle (Matic)',
+      'Performance Motorcycle': 'Motorcycle (Manual)',
+      'Climate Control': 'HVAC',
+    };
+
+    const cleaned = cats.map(c => mapping[c] || c);
+    const unique = Array.from(new Set([...cleaned, ...DEFAULT_CATEGORIES]));
+    
+    // Filter out categories that are now redundant (the keys of our mapping)
+    const filtered = unique.filter(c => !Object.keys(mapping).includes(c));
+
+    return filtered.sort((a, b) => {
+      if (a === 'Other') return 1;
+      if (b === 'Other') return -1;
+      return a.localeCompare(b);
+    });
+  }
+
   async getCategories(): Promise<string[]> {
     const db = await this.readDb();
-    return db.categories;
+    return this.cleanCategories(db.categories);
   }
 
   async addCategory(category: string): Promise<void> {
     const db = await this.readDb();
-    if (!db.categories.includes(category)) {
-      db.categories.push(category);
-      await this.writeDb(db);
-    }
+    const cleaned = this.cleanCategories([...db.categories, category]);
+    db.categories = cleaned;
+    await this.writeDb(db);
   }
 
   async getAssets(): Promise<Asset[]> {
@@ -202,21 +227,41 @@ export class FirestoreRepository implements StorageRepository {
     });
   }
 
+  private cleanCategories(cats: string[]): string[] {
+    const mapping: Record<string, string> = {
+      'Automotive': 'Vehicle',
+      'Car (Manual)': 'Vehicle',
+      'Car (Matic)': 'Vehicle',
+      'Car': 'Vehicle',
+      'Motor': 'Motorcycle (Manual)',
+      'Motor (Manual)': 'Motorcycle (Manual)',
+      'Motor (Matic)': 'Motorcycle (Matic)',
+      'Performance Motorcycle': 'Motorcycle (Manual)',
+      'Climate Control': 'HVAC',
+    };
+
+    const cleaned = cats.map(c => mapping[c] || c);
+    const unique = Array.from(new Set([...cleaned, ...DEFAULT_CATEGORIES]));
+    
+    const filtered = unique.filter(c => !Object.keys(mapping).includes(c));
+
+    return filtered.sort((a, b) => {
+      if (a === 'Other') return 1;
+      if (b === 'Other') return -1;
+      return a.localeCompare(b);
+    });
+  }
+
   async getCategories(): Promise<string[]> {
     const doc = await this.db.collection('config').doc('categories').get();
-    if (!doc.exists) {
-      await this.db.collection('config').doc('categories').set({ list: DEFAULT_CATEGORIES });
-      return DEFAULT_CATEGORIES;
-    }
-    return doc.data()?.list || [];
+    let list = doc.exists ? (doc.data()?.list || []) : DEFAULT_CATEGORIES;
+    return this.cleanCategories(list);
   }
 
   async addCategory(category: string): Promise<void> {
     const categories = await this.getCategories();
-    if (!categories.includes(category)) {
-      categories.push(category);
-      await this.db.collection('config').doc('categories').set({ list: categories });
-    }
+    const cleaned = this.cleanCategories([...categories, category]);
+    await this.db.collection('config').doc('categories').set({ list: cleaned });
   }
 
   async getAssets(): Promise<Asset[]> {
