@@ -1164,12 +1164,6 @@ export default function App() {
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between items-center transition-all mt-4">
-                            <h2 className="text-[11px] font-black tracking-[0.2em] uppercase text-app-muted shrink-0">
-                              System Status
-                            </h2>
-                            <div className="h-px bg-slate-100 w-full mx-4" />
-                        </div>
 
                         {[UrgencyState.CRITICAL, UrgencyState.UPCOMING, UrgencyState.HEALTHY].map((urgency, i) => {
                             const filtered = sortedComponents.filter(c => c.status.urgency === urgency);
@@ -1693,21 +1687,6 @@ export default function App() {
 
         {/* Stats Panel / Desktop Content */}
         <div className="flex flex-col gap-6 h-full">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-app-smart fill-app-smart" />
-                    System Status
-                </h3>
-                
-                <div className="grid grid-cols-1 gap-4 mb-8">
-                    <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-bold text-app-muted uppercase tracking-wider mb-1">Logic Engine</p>
-                            <p className="text-xl font-black text-app-ink">Healthy</p>
-                        </div>
-                        <div className="h-2 w-2 bg-app-healthy rounded-full animate-pulse" />
-                    </div>
-                </div>
 
                 <div className="flex-1 overflow-y-auto pr-2">
                     <h4 className="text-[11px] font-black text-app-muted uppercase tracking-widest mb-4">Component Insights</h4>
@@ -1779,23 +1758,6 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="bg-app-ink rounded-3xl p-6 text-white overflow-hidden relative min-h-[160px]">
-                <div className="relative z-10">
-                    <h4 className="text-sm font-bold mb-1 opacity-80 uppercase tracking-widest text-indigo-200">System State</h4>
-                    <p className="text-4xl font-black mb-4 tracking-tighter">Active</p>
-                    <div className="flex items-center gap-4">
-                        <div className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
-                            <motion.div 
-                                animate={{ x: [-100, 100] }}
-                                transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                                className="h-full w-20 bg-white/40"
-                            />
-                        </div>
-                        <span className="text-[10px] font-mono opacity-60">Heartbeat OK</span>
-                    </div>
-                </div>
-                <Zap className="absolute -right-8 -bottom-8 w-32 h-32 text-white/5 rotate-12" />
-            </div>
         </div>
       </main>
 
