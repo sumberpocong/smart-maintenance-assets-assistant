@@ -831,7 +831,7 @@ export default function App() {
           <header className="px-6 pt-10 pb-4 sticky top-0 bg-white/95 backdrop-blur-sm z-10">
             <div className="flex justify-between items-start mb-1 relative z-10">
               <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-app-ink">{language === 'en' ? 'Dashboard' : 'Dasbor'}</h1>
+                <h1 className="text-2xl font-extrabold tracking-tight text-app-ink">{language === 'en' ? 'Overview' : 'Ikhtisar'}</h1>
                 <p className="text-app-muted text-sm font-medium">
                   {componentsWithStatus.filter(c => c.status.urgency !== UrgencyState.HEALTHY).length} {language === 'en' ? 'Urgent Tasks' : 'Tugas Mendesak'}
                 </p>
@@ -868,6 +868,19 @@ export default function App() {
                       Overview
                     </h2>
                     <div className="h-px bg-slate-100 w-full mx-4" />
+                </div>
+
+                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
+                   <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Zap className="w-4 h-4 text-blue-600 fill-blue-600" />
+                      </div>
+                      <h4 className="text-xs font-black text-app-ink uppercase tracking-widest">Maintenance Pulse</h4>
+                   </div>
+                   <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                     Infrastructure health is <strong>{(stats.urgentCount === 0 ? 100 : Math.max(0, 100 - (stats.urgentCount * 15)))}%</strong> stable. 
+                     The system is currently tracking <strong>{stats.totalComponents}</strong> components with Smart Calibration active.
+                   </p>
                 </div>
 
                 {/* Financial Overview First */}
@@ -950,14 +963,24 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center transition-all mt-4">
-                    <h2 className="text-[11px] font-black tracking-[0.2em] uppercase text-app-muted shrink-0">
-                      Advanced Filters
-                    </h2>
-                    <div className="h-px bg-slate-100 w-full mx-4" />
+              </div>
+            ) : activeTab === 'status' ? (
+              <div className="space-y-6 pt-4 pb-12">
+                <div className="flex justify-between items-center bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                  <button 
+                    onClick={() => setShowLogsInStatus(false)}
+                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${!showLogsInStatus ? 'bg-white shadow-sm text-app-ink ring-1 ring-slate-200' : 'text-app-muted hover:text-app-ink'}`}
+                  >
+                    Maintenance
+                  </button>
+                  <button 
+                    onClick={() => setShowLogsInStatus(true)}
+                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${showLogsInStatus ? 'bg-white shadow-sm text-app-ink ring-1 ring-slate-200' : 'text-app-muted hover:text-app-ink'}`}
+                  >
+                    Service Logs
+                  </button>
                 </div>
 
-                {/* Advanced Filters moved to Home */}
                 <div className="flex flex-col gap-3">
                   {/* Category Dropdown */}
                   <div className="relative w-full">
@@ -1079,36 +1102,6 @@ export default function App() {
                       )}
                     </AnimatePresence>
                   </div>
-                </div>
-
-                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
-                   <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Zap className="w-4 h-4 text-blue-600 fill-blue-600" />
-                      </div>
-                      <h4 className="text-xs font-black text-app-ink uppercase tracking-widest">Maintenance Pulse</h4>
-                   </div>
-                   <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                     Infrastructure health is <strong>{(stats.urgentCount === 0 ? 100 : Math.max(0, 100 - (stats.urgentCount * 15)))}%</strong> stable. 
-                     The system is currently tracking <strong>{stats.totalComponents}</strong> components with Smart Calibration active.
-                   </p>
-                </div>
-              </div>
-            ) : activeTab === 'status' ? (
-              <div className="space-y-6 pt-4 pb-12">
-                <div className="flex justify-between items-center bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                  <button 
-                    onClick={() => setShowLogsInStatus(false)}
-                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${!showLogsInStatus ? 'bg-white shadow-sm text-app-ink ring-1 ring-slate-200' : 'text-app-muted hover:text-app-ink'}`}
-                  >
-                    Maintenance
-                  </button>
-                  <button 
-                    onClick={() => setShowLogsInStatus(true)}
-                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${showLogsInStatus ? 'bg-white shadow-sm text-app-ink ring-1 ring-slate-200' : 'text-app-muted hover:text-app-ink'}`}
-                  >
-                    Service Logs
-                  </button>
                 </div>
 
                 {showLogsInStatus ? (
@@ -1729,7 +1722,7 @@ export default function App() {
                 active={activeTab === 'home'} 
                 onClick={() => setActiveTab('home')}
                 icon={<Home className="w-4.5 h-4.5" />} 
-                label="Home" 
+                label="Overview" 
             />
             <NavItem 
                 active={activeTab === 'status'} 

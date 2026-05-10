@@ -53,13 +53,13 @@ async function startServer() {
     const { name, category } = req.body;
     try {
       const db: Record<string, any[]> = {
-        "motorcycle manual": [
+        "motorcycle (manual)": [
           { name: "Engine Oil", metricType: "KM", suggestedIntervalUsage: 2000, suggestedIntervalTime: undefined, estimatedCost: 15 },
           { name: "Chain Clean & Lube", metricType: "KM", suggestedIntervalUsage: 500, suggestedIntervalTime: undefined, estimatedCost: 5 },
           { name: "Spark Plug", metricType: "KM", suggestedIntervalUsage: 8000, suggestedIntervalTime: undefined, estimatedCost: 8 },
           { name: "Air Filter", metricType: "KM", suggestedIntervalUsage: 10000, suggestedIntervalTime: undefined, estimatedCost: 12 },
         ],
-        "motorcycle matic": [
+        "motorcycle (matic)": [
           { name: "Engine Oil", metricType: "KM", suggestedIntervalUsage: 2000, suggestedIntervalTime: undefined, estimatedCost: 15 },
           { name: "Gear Oil (Oli Gardan)", metricType: "KM", suggestedIntervalUsage: 8000, suggestedIntervalTime: undefined, estimatedCost: 10 },
           { name: "CVT Belt", metricType: "KM", suggestedIntervalUsage: 20000, suggestedIntervalTime: undefined, estimatedCost: 35 },
@@ -80,10 +80,10 @@ async function startServer() {
 
       const searchStr = `${name} ${category}`.toLowerCase();
       let suggestions: any[] = [];
-      if (searchStr.includes("matic") || searchStr.includes("scooter")) {
-        suggestions = db["motorcycle matic"];
-      } else if (searchStr.includes("motor") || searchStr.includes("bike") || searchStr.includes("motorcycle") || searchStr.includes("manual")) {
-        suggestions = db["motorcycle manual"];
+      if (searchStr.includes("matic") || searchStr.includes("scooter") || searchStr.includes("motorcycle (matic)")) {
+        suggestions = db["motorcycle (matic)"];
+      } else if (searchStr.includes("motor") || searchStr.includes("bike") || searchStr.includes("motorcycle") || searchStr.includes("manual") || searchStr.includes("motorcycle (manual)")) {
+        suggestions = db["motorcycle (manual)"];
       } else if (searchStr.includes("car") || searchStr.includes("vehicle") || searchStr.includes("automotive")) {
         suggestions = db["car"];
       } else if (searchStr.includes("ac") || searchStr.includes("aircon") || searchStr.includes("conditioner") || searchStr.includes("hvac")) {
@@ -147,7 +147,7 @@ Constraint: Return ONLY a valid JSON object. Do not include markdown formatting 
 JSON Schema:
 {
 "asset_name": "Specific model or name",
-"category": "Must be one of: [Vehicle, Electronics, machine Tool]",
+"category": "Must be one of: [Motorcycle (Manual), Motorcycle (Matic), Vehicle, Electronics, IT Equipment, HVAC, Home Appliance, Heavy Machinery]",
 "description": "A 1-sentence technical summary",
 "suggested_maintenance": ["Item 1", "Item 2"]
 }

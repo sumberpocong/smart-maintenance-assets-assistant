@@ -35,14 +35,14 @@ export interface StorageRepository {
 }
 
 const DEFAULT_CATEGORIES = [
-  'Motor (Manual)',
-  'Motor (Matic)',
-  'Car (Manual)',
-  'Car (Matic)',
-  'Automotive',
   'Electronics',
+  'Heavy Machinery',
   'Home Appliance',
-  'Climate Control',
+  'HVAC',
+  'IT Equipment',
+  'Motorcycle (Manual)',
+  'Motorcycle (Matic)',
+  'Vehicle',
   'Other',
 ];
 
