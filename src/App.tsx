@@ -871,43 +871,41 @@ export default function App() {
                 </div>
 
                 {/* Financial Overview First */}
-                <div className="bg-app-ink p-6 rounded-3xl shadow-2xl flex flex-col justify-between relative overflow-hidden group hover:shadow-cyan-900/20 transition-all duration-500">
-                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl transition-all duration-700 group-hover:scale-150" />
-                    <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-app-smart/10 rounded-full blur-3xl transition-all duration-700 group-hover:scale-150" />
+                <div className="bg-app-ink p-5 rounded-3xl shadow-xl flex flex-col relative overflow-hidden group transition-all duration-500">
+                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
                     
-                    <div className="flex justify-between items-start mb-8 relative z-10">
-                      <div>
-                        <h3 className="text-white text-[11px] font-black opacity-80 uppercase tracking-widest">{language === 'en' ? 'Expenditure Overview' : 'Ringkasan Pengeluaran'}</h3>
-                      </div>
+                    <div className="flex justify-between items-center mb-4 relative z-10">
+                      <h3 className="text-white text-[10px] font-black opacity-60 uppercase tracking-widest">{language === 'en' ? 'Expenditure Overview' : 'Ringkasan Pengeluaran'}</h3>
                       <button 
                         onClick={() => setActiveTab('settings')}
-                        className="p-2 bg-white/10 rounded-xl backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors active:scale-95"
-                        title={language === 'en' ? 'Set Currency' : 'Atur Mata Uang'}
+                        className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md border border-white/10 hover:bg-white/20 transition-colors"
                       >
-                        <DollarSign className="w-4 h-4 text-white opacity-80" />
+                        <DollarSign className="w-3.5 h-3.5 text-white opacity-80" />
                       </button>
                     </div>
-
-                    <div className="space-y-6 relative z-10">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">{language === 'en' ? 'Total Invested' : 'Total Diinvestasikan'}</p>
-                        <p className="text-4xl font-black text-white tracking-tighter">{formatCurrency(stats.totalSpent)}</p>
+    
+                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">{language === 'en' ? 'Invested' : 'Investasi'}</p>
+                        <p className="text-2xl font-black text-white tracking-tighter leading-none">{formatCurrency(stats.totalSpent)}</p>
                       </div>
-                      
-                      <div className="h-px w-full bg-gradient-to-r from-white/20 to-transparent" />
-                      
-                      <div className="flex items-end justify-between">
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">{language === 'en' ? 'Projected Needs' : 'Proyeksi Kebutuhan'}</p>
-                          <p className="text-xl font-black text-app-smart tracking-tight">{formatCurrency(stats.predictedCost)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">{language === 'en' ? 'Ratio' : 'Rasio'}</p>
-                          <p className="text-xs font-black text-white/60">
-                            {stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100).toFixed(1) : 0}%
-                          </p>
-                        </div>
+                      <div className="space-y-0.5 text-right border-l border-white/10 pl-4">
+                        <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">{language === 'en' ? 'Projected' : 'Proyeksi'}</p>
+                        <p className="text-2xl font-black text-app-smart tracking-tighter leading-none">{formatCurrency(stats.predictedCost)}</p>
                       </div>
+                    </div>
+    
+                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between relative z-10">
+                        <div className="flex-1 h-1 bg-white/10 rounded-full mr-4 overflow-hidden">
+                            <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.min(stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100) : 0, 100)}%` }}
+                                className="h-full bg-app-smart"
+                            />
+                        </div>
+                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                            {language === 'en' ? 'Ratio' : 'Rasio'}: {stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100).toFixed(0) : 0}%
+                        </p>
                     </div>
                 </div>
 
