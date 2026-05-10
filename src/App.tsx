@@ -1691,7 +1691,7 @@ export default function App() {
                      transition={{ duration: 0.15 }}
                      className="bg-white rounded-[20px] shadow-xl border border-slate-100 p-2 min-w-[220px] flex flex-col"
                    >
-                     <button
+                      <button
                         onClick={() => {
                           setIsActionMenuOpen(false);
                           setIsGlobalServiceModalOpen(true);
@@ -1699,7 +1699,7 @@ export default function App() {
                         className="text-left px-4 py-3.5 hover:bg-slate-50 transition-colors flex items-center gap-3 rounded-xl font-bold text-sm text-app-ink"
                      >
                        <Settings className="w-4 h-4 text-app-smart" />
-                       Service / Repair
+                       Manual Service Entry
                      </button>
                      <div className="h-px bg-slate-50 w-full" />
                      <button
@@ -1724,22 +1724,6 @@ export default function App() {
              </div>
           )}
 
-          {/* Quick Action Button in Viewport (Healthy state only) */}
-          {activeTab === 'home' && sortedComponents.filter(c => c.status.urgency !== UrgencyState.HEALTHY).length === 0 && (
-             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] z-20 mb-16 lg:mb-0">
-                  <button 
-                      onClick={() => {
-                        if (components.length > 0) {
-                          setSelectedComponent(components[0]);
-                          setIsLogging(true);
-                        }
-                      }}
-                      className="w-full bg-app-ink text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform opacity-60 hover:opacity-100"
-                  >
-                      {language === 'en' ? 'Manual Service Entry' : 'Input Servis Manual'}
-                  </button>
-             </div>
-          )}
 
           {/* Mobile Nav Bar Simulation */}
           <nav className="h-16 bg-white/90 backdrop-blur-lg flex justify-around items-center border-t border-slate-100 px-4">
