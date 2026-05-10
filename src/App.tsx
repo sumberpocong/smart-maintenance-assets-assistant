@@ -1154,7 +1154,7 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                    {sortedComponents.length === 0 ? (
+                    sortedComponents.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-20 px-6 text-center bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-100 mt-6">
                         <div className="w-20 h-20 bg-white shadow-sm rounded-3xl flex items-center justify-center mb-6">
                           <ClipboardList className="w-10 h-10 text-slate-300" />
@@ -1201,7 +1201,7 @@ export default function App() {
                             );
                         })}
                       </>
-                    )}
+                    )
                 )}
               </div>
             ) : activeTab === 'assets' ? (
@@ -2638,6 +2638,8 @@ export default function App() {
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {confirmModal && confirmModal.open && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
