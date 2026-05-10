@@ -21,6 +21,16 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": [
+      "node",
+      "express",
+      "babel__core",
+      "babel__generator",
+      "babel__template",
+      "babel__traverse",
+      "connect",
+      "estree"
+    ]
   }
 }
