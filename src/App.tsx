@@ -849,7 +849,7 @@ export default function App() {
           <main className="flex-1 flex flex-col items-center justify-center lg:py-8 w-full min-h-screen">
         
         {/* Mobile Viewport Simulation */}
-        <div className="relative bg-white lg:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] lg:rounded-[3rem] flex flex-col w-full h-[100vh] lg:h-[90vh] max-w-[420px] lg:border-[8px] lg:border-slate-100/80 overflow-hidden ring-1 ring-slate-900/5">
+        <div className="relative bg-white lg:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] lg:rounded-[3rem] flex flex-col w-full h-screen lg:h-[90vh] max-w-[420px] lg:border-8 lg:border-slate-100/80 overflow-hidden ring-1 ring-slate-900/5">
           {activeTab === 'home' && sortedComponents.filter(c => c.status.urgency !== UrgencyState.HEALTHY).length > 0 && (
              <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_80px_rgba(239,68,68,0.3)] z-50 rounded-[32px]" />
           )}
@@ -1212,7 +1212,7 @@ export default function App() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
-                            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 flex items-center justify-between">
+                            <div className="bg-slate-50 p-6 rounded-4xl border border-slate-100 flex items-center justify-between">
                                 <div>
                                     <p className="text-[10px] font-bold text-app-muted uppercase tracking-wider mb-1">Logic Engine</p>
                                     <p className="text-xl font-black text-app-ink">Healthy</p>
@@ -1613,7 +1613,7 @@ export default function App() {
                       <div className="h-px bg-slate-100 w-full mx-4" />
                   </div>
 
-                  <div className="bg-white rounded-[2rem] border border-slate-100 p-6 space-y-6 shadow-sm">
+                  <div className="bg-white rounded-4xl border border-slate-100 p-6 space-y-6 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
                         {user?.photoURL ? (
@@ -1636,7 +1636,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 space-y-6">
+                  <div className="bg-white p-6 rounded-4xl border border-slate-100 space-y-6">
                     <h4 className="text-[10px] font-black text-app-muted uppercase tracking-[0.2em]">{language === 'en' ? 'Display & Preferences' : 'Tampilan & Preferensi'}</h4>
                     <div className="space-y-4">
                       
@@ -1671,7 +1671,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 space-y-6">
+                  <div className="bg-white p-6 rounded-4xl border border-slate-100 space-y-6">
                     <h4 className="text-[10px] font-black text-app-muted uppercase tracking-[0.2em]">{language === 'en' ? 'Currency & Financials' : 'Mata Uang & Keuangan'}</h4>
                     <div className="space-y-4">
                       
@@ -1703,7 +1703,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 space-y-6">
+                  <div className="bg-white p-6 rounded-4xl border border-slate-100 space-y-6">
                     <h4 className="text-[10px] font-black text-app-muted uppercase tracking-[0.2em]">{language === 'en' ? 'Data Operations' : 'Operasi Data'}</h4>
                     <div className="space-y-3">
                       <button className="w-full flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-slate-300 transition-all active:scale-[0.98]">
@@ -1833,7 +1833,7 @@ export default function App() {
       {/* Active Service Modal */}
       <AnimatePresence>
         {isNotificationsOpen && (
-          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 lg:p-4">
+          <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 lg:p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1872,7 +1872,7 @@ export default function App() {
                   notifications.map((notification, idx) => (
                     <div 
                       key={`notif-${notification.id}-${idx}`} 
-                      className={`p-4 rounded-[1.5rem] border transition-all ${notification.read ? 'bg-white border-slate-100 opacity-60' : 'bg-slate-50 border-slate-200'}`}
+                      className={`p-4 rounded-3xl border transition-all ${notification.read ? 'bg-white border-slate-100 opacity-60' : 'bg-slate-50 border-slate-200'}`}
                     >
                       <div className="flex items-center gap-2 mb-2">
                          <div className={`w-2 h-2 rounded-full ${notification.type === 'error' ? 'bg-app-critical' : notification.type === 'warning' ? 'bg-app-upcoming' : 'bg-app-smart'}`} />
@@ -1896,7 +1896,7 @@ export default function App() {
         )}
 
         {isAddingAsset && (
-          <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 lg:p-4">
+          <div className="fixed inset-0 z-70 flex items-end sm:items-center justify-center p-0 lg:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAddingAsset(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="relative bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl p-6 shadow-2xl flex flex-col max-h-[95vh]">
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
@@ -2063,7 +2063,7 @@ export default function App() {
         )}
 
         {isEditingAsset && editingAsset && (
-          <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 lg:p-4">
+          <div className="fixed inset-0 z-70 flex items-end sm:items-center justify-center p-0 lg:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditingAsset(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="relative bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl p-6 shadow-2xl flex flex-col max-h-[95vh]">
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
@@ -2178,7 +2178,7 @@ export default function App() {
                   <button 
                     onClick={handleUpdateAsset}
                     disabled={isSubmitting}
-                    className="flex-[2] bg-app-ink text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm disabled:opacity-50"
+                    className="flex-2 bg-app-ink text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm disabled:opacity-50"
                   >
                     {isSubmitting ? <RotateCcw className="w-4 h-4 animate-spin mx-auto" /> : 'Save Changes'}
                   </button>
@@ -2188,7 +2188,7 @@ export default function App() {
         )}
 
         {isAddingComponent && (
-          <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 lg:p-4">
+          <div className="fixed inset-0 z-70 flex items-end sm:items-center justify-center p-0 lg:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAddingComponent(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="relative bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl p-6 shadow-2xl flex flex-col max-h-[95vh]">
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
@@ -2260,7 +2260,7 @@ export default function App() {
         )}
 
         {isEditingComponent && editingComponent && (
-          <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 lg:p-4">
+          <div className="fixed inset-0 z-70 flex items-end sm:items-center justify-center p-0 lg:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditingComponent(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" />
             <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} className="relative bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl p-6 shadow-2xl flex flex-col max-h-[95vh]">
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden shrink-0" />
@@ -2292,7 +2292,7 @@ export default function App() {
               
               <div className="flex gap-3 pt-4 shrink-0 border-t border-slate-100 mt-2">
                   <button onClick={() => setIsEditingComponent(false)} className="flex-1 bg-slate-100 text-slate-500 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-colors text-sm">Cancel</button>
-                  <button onClick={handleUpdateComponent} className="flex-[2] bg-app-ink text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm">Save Changes</button>
+                  <button onClick={handleUpdateComponent} className="flex-2 bg-app-ink text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm">Save Changes</button>
               </div>
             </motion.div>
           </div>
@@ -2304,7 +2304,7 @@ export default function App() {
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
-                    className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm"
+                    className="fixed bottom-24 left-1/2 -translate-x-1/2 z-100 w-[90%] max-w-sm"
                 >
                     <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-800">
                         <div className="flex items-center gap-3">
@@ -2332,7 +2332,7 @@ export default function App() {
         </AnimatePresence>
 
         {isGlobalServiceModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 lg:p-4">
+          <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 lg:p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2469,7 +2469,7 @@ export default function App() {
                         <button 
                             onClick={handleGlobalService}
                             disabled={isSubmitting}
-                            className="w-full bg-app-ink text-white font-black text-lg py-5 rounded-[2rem] shadow-xl shadow-slate-900/10 active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-slate-800 disabled:opacity-50"
+                            className="w-full bg-app-ink text-white font-black text-lg py-5 rounded-4xl shadow-xl shadow-slate-900/10 active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-slate-800 disabled:opacity-50"
                         >
                             {isSubmitting ? <RotateCcw className="w-5 h-5 animate-spin" /> : 'Apply & Save Log'} <CheckCircle className="w-6 h-6" />
                         </button>
@@ -2481,7 +2481,7 @@ export default function App() {
         )}
 
         {isStopTrackingModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 lg:p-4">
+          <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 lg:p-4">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2554,7 +2554,7 @@ export default function App() {
                   <button 
                     onClick={handleStopTracking}
                     disabled={!stopTrackingAssetId || isSubmitting}
-                    className="w-full bg-app-critical text-white font-black text-lg py-5 rounded-[2rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100"
+                    className="w-full bg-app-critical text-white font-black text-lg py-5 rounded-4xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:active:scale-100"
                   >
                     {isSubmitting ? <RotateCcw className="w-5 h-5 animate-spin" /> : 'Confirm Stop Tracking'}
                   </button>
@@ -2648,7 +2648,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="bg-blue-50/50 p-5 rounded-[2rem] border border-blue-100 flex gap-4 items-center">
+                <div className="bg-blue-50/50 p-5 rounded-4xl border border-blue-100 flex gap-4 items-center">
                     <div className="p-4 bg-white rounded-2xl shadow-sm border border-blue-50">
                       <Zap className="w-6 h-6 text-app-smart fill-app-smart" />
                     </div>
@@ -2661,7 +2661,7 @@ export default function App() {
                 <button 
                   onClick={handleService}
                   disabled={isSubmitting}
-                  className="w-full bg-app-ink text-white font-black text-lg py-5 rounded-[2rem] shadow-xl shadow-slate-900/10 active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-slate-800 disabled:opacity-50"
+                  className="w-full bg-app-ink text-white font-black text-lg py-5 rounded-4xl shadow-xl shadow-slate-900/10 active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-slate-800 disabled:opacity-50"
                 >
                   {isSubmitting ? <RotateCcw className="w-5 h-5 animate-spin" /> : language === 'en' ? 'Apply & Reset Clock' : 'Simpan & Reset'} <CheckCircle className="w-6 h-6" />
                 </button>
@@ -2673,9 +2673,9 @@ export default function App() {
 
       <AnimatePresence>
         {confirmModal && confirmModal.open && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setConfirmModal(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-slate-100">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white w-full max-w-sm rounded-4xl p-8 shadow-2xl border border-slate-100">
                 <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center mb-6 mx-auto">
                     <AlertCircle className="w-8 h-8 text-app-critical" />
                 </div>
@@ -2690,9 +2690,9 @@ export default function App() {
         )}
 
         {inputModal && inputModal.open && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setInputModal(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-slate-100">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white w-full max-w-sm rounded-4xl p-8 shadow-2xl border border-slate-100">
                 <h3 className="text-xl font-black mb-6 uppercase tracking-tight">{inputModal.title}</h3>
                 <input 
                     autoFocus

@@ -9,6 +9,45 @@ import { calculateNextEWMA } from "./src/lib/logic.ts";
 import { storage } from "./src/storage.ts";
 import admin from 'firebase-admin';
 import rateLimit from 'express-rate-limit';
+import { z } from 'zod';
+
+// --- Validation Schemas ---
+const assetSchema = z.object({
+  name: z.string().min(1).max(100),
+  category: z.string().min(1).max(50),
+  description: z.string().max(500).optional(),
+  purchaseDate: z.string().optional(),
+  odometer: z.coerce.number().nonnegative().optional(),
+  useLevel: z.enum(['LEISURE', 'NORMAL', 'HEAVY', 'EXTREME']).optional()
+});
+
+const componentSchema = z.object({
+  assetId: z.string().min(1),
+  name: z.string().min(1).max(100),
+  metricType: z.enum(['KM', 'Days', 'Hours']),
+  trackingMode: z.nativeEnum(TrackingMode),
+  staticIntervalUsage: z.coerce.number().positive().optional(),
+  staticIntervalTime: z.coerce.number().positive().optional(),
+  useLevel: z.enum(['LOW', 'MODERATE', 'HIGH', 'EXTREME']).optional(),
+  estimatedCost: z.coerce.number().nonnegative().optional(),
+  purchaseDate: z.string().optional()
+});
+
+const componentUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  staticIntervalUsage: z.coerce.number().positive().optional(),
+  staticIntervalTime: z.coerce.number().positive().optional(),
+  trackingMode: z.nativeEnum(TrackingMode).optional()
+});
+
+const serviceSchema = z.object({
+  componentId: z.string().min(1),
+  metricValue: z.coerce.number().nonnegative().optional().nullable(),
+  notes: z.string().max(1000).optional(),
+  cost: z.coerce.number().nonnegative().optional()
+});
+
+const sanitizeInput = (str: string) => str.replace(/[^a-zA-Z0-9 \-_(),.]/g, '').substring(0, 100);
 
 // --- Initialization ---
 
@@ -76,7 +115,14 @@ async function startServer() {
   const app = express();
   const PORT = parseInt(process.env.PORT || "3000", 10);
 
-  app.use(express.json({ limit: "20mb" }));
+  // Trust proxy for rate limiting behind Cloud Run load balancer
+  app.set('trust proxy', 1);
+
+  // Route-specific large payload parsing (for AI image scanning)
+  app.use("/api/ai/scan-asset", express.json({ limit: "20mb" }));
+  
+  // Standard JSON body parsing limit for all other routes
+  app.use(express.json({ limit: "100kb" }));
 
   // Apply Auth Middleware and Rate Limiter to all API routes
   app.use("/api/*", apiLimiter);
@@ -108,7 +154,10 @@ async function startServer() {
   });
 
   app.post("/api/ai/suggest-components", async (req: any, res) => {
-    const { name, category } = req.body;
+    let { name, category } = req.body;
+    name = sanitizeInput(name || '');
+    category = sanitizeInput(category || '');
+    
     try {
       const db: Record<string, any[]> = {
         "motorcycle (manual)": [
@@ -165,7 +214,9 @@ Return ONLY the JSON array, no markdown.`;
   });
 
   app.post("/api/ai/predict-cost", async (req: any, res) => {
-    const { componentName, history } = req.body;
+    let { componentName, history } = req.body;
+    componentName = sanitizeInput(componentName || '');
+    
     if (!process.env.GEMINI_API_KEY) {
       return res.status(503).json({ error: "AI features require GEMINI_API_KEY" });
     }
@@ -255,10 +306,9 @@ If the product has a visible barcode or brand name, prioritize that for the asse
 
   app.post("/api/assets", async (req: any, res) => {
     try {
-      const { name, category, description, purchaseDate, odometer, useLevel } = req.body;
-      if (!name || !category) {
-        return res.status(400).json({ error: "name and category are required" });
-      }
+      const parsed = assetSchema.parse(req.body);
+      const { name, category, description, purchaseDate, odometer, useLevel } = parsed;
+      
       const newAsset: Asset = {
         id: newId(),
         userId: req.uid,
@@ -266,7 +316,7 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         category,
         description,
         purchaseDate,
-        odometer: odometer !== undefined ? parseFloat(odometer) : undefined,
+        odometer,
         useLevel: useLevel || 'NORMAL'
       };
       
@@ -292,7 +342,8 @@ If the product has a visible barcode or brand name, prioritize that for the asse
   app.put("/api/assets/:id", async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { name, category, description, purchaseDate, odometer, useLevel } = req.body;
+      const parsed = assetSchema.parse(req.body);
+      const { name, category, description, purchaseDate, odometer, useLevel } = parsed;
       
       const oldAsset = await storage.getAsset(req.uid, id);
       if (!oldAsset) return res.status(404).json({ error: "Asset not found" });
@@ -339,10 +390,8 @@ If the product has a visible barcode or brand name, prioritize that for the asse
 
   app.post("/api/components", async (req: any, res) => {
     try {
-      const { assetId, name, metricType, trackingMode, staticIntervalUsage, staticIntervalTime, useLevel, estimatedCost, purchaseDate } = req.body;
-      if (!assetId || !name) {
-        return res.status(400).json({ error: "assetId and name are required" });
-      }
+      const parsed = componentSchema.parse(req.body);
+      const { assetId, name, metricType, trackingMode, staticIntervalUsage, staticIntervalTime, useLevel, estimatedCost, purchaseDate } = parsed;
 
       // Verify asset ownership
       const asset = await storage.getAsset(req.uid, assetId);
@@ -355,13 +404,13 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         name,
         metricType,
         trackingMode,
-        staticIntervalUsage: staticIntervalUsage ? parseInt(staticIntervalUsage) : undefined,
-        staticIntervalTime: staticIntervalTime ? parseInt(staticIntervalTime) : undefined,
+        staticIntervalUsage: staticIntervalUsage,
+        staticIntervalTime: staticIntervalTime,
         currentPredictedInterval: trackingMode === TrackingMode.AUTO_EWMA ? 1000 : undefined,
         currentAccumulatedUsage: 0,
         lastServiceDate: new Date().toISOString(),
         useLevel,
-        estimatedCost: estimatedCost ? parseFloat(estimatedCost) : undefined,
+        estimatedCost: estimatedCost,
         purchaseDate
       };
       
@@ -376,15 +425,16 @@ If the product has a visible barcode or brand name, prioritize that for the asse
   app.put("/api/components/:id", async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { name, staticIntervalUsage, staticIntervalTime, trackingMode } = req.body;
+      const parsed = componentUpdateSchema.parse(req.body);
+      const { name, staticIntervalUsage, staticIntervalTime, trackingMode } = parsed;
       
       const comp = await storage.getComponent(req.uid, id);
       if (!comp) return res.status(404).json({ error: "Component not found" });
 
       const updates: Partial<Component> = {};
       if (name !== undefined) updates.name = name;
-      if (staticIntervalUsage !== undefined) updates.staticIntervalUsage = staticIntervalUsage ? parseInt(staticIntervalUsage) : undefined;
-      if (staticIntervalTime !== undefined) updates.staticIntervalTime = staticIntervalTime ? parseInt(staticIntervalTime) : undefined;
+      if (staticIntervalUsage !== undefined) updates.staticIntervalUsage = staticIntervalUsage;
+      if (staticIntervalTime !== undefined) updates.staticIntervalTime = staticIntervalTime;
       if (trackingMode !== undefined) updates.trackingMode = trackingMode;
       
       await storage.updateComponent(req.uid, id, updates);
@@ -428,7 +478,9 @@ If the product has a visible barcode or brand name, prioritize that for the asse
 
   app.post("/api/service", async (req: any, res) => {
     try {
-      const { componentId, metricValue, notes, cost } = req.body;
+      const parsed = serviceSchema.parse(req.body);
+      const { componentId, metricValue, notes, cost } = parsed;
+      
       const component = await storage.getComponent(req.uid, componentId);
       if (!component) return res.status(404).json({ error: "Component not found" });
 
@@ -442,7 +494,7 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         timestamp: new Date().toISOString(),
         actualMetricValue: usedValue,
         notes,
-        cost: cost != null ? parseFloat(cost) : undefined
+        cost
       };
       
       await storage.addLog(req.uid, newLog);
@@ -458,7 +510,7 @@ If the product has a visible barcode or brand name, prioritize that for the asse
       }
 
       if (cost != null) {
-        updates.estimatedCost = parseFloat(cost);
+        updates.estimatedCost = cost;
       }
       
       await storage.updateComponent(req.uid, componentId, updates);

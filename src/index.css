@@ -96,7 +96,7 @@
 }
 
 .timeline-dot {
-  @apply absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-app-ink;
+  @apply absolute left-[-9px] top-1.5 w-4 h-4 rounded-full bg-white border-2 border-app-ink;
 }
 
 .glass-nav {
@@ -104,7 +104,7 @@
 }
 
 .enterprise-card {
-  @apply bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-enterprise transition-all duration-300;
+  @apply bg-white dark:bg-slate-900 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-enterprise transition-all duration-300;
 }
 
 .metric-value {

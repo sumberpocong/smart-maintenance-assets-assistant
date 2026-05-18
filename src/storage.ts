@@ -9,6 +9,7 @@ export interface DbData {
   logs: ServiceLog[];
   useLevelLogs: UseLevelLog[];
   categories: string[];
+  userCategories?: Record<string, string[]>;
 }
 
 export interface StorageRepository {
@@ -114,16 +115,18 @@ export class JsonRepository implements StorageRepository {
 
   async getCategories(userId: string): Promise<string[]> {
     const db = await this.readDb();
-    // In local JSON, we treat categories as global for now, or you could filter by userId if stored with one.
-    // For simplicity and matching the existing structure, we return all unique categories.
-    return this.cleanCategories(db.categories);
+    const userCats = db.userCategories?.[userId] || [];
+    return this.cleanCategories([...(db.categories || []), ...userCats]);
   }
 
   async addCategory(userId: string, category: string): Promise<void> {
     const db = await this.readDb();
-    const cleaned = this.cleanCategories([...db.categories, category]);
-    db.categories = cleaned;
-    await this.writeDb(db);
+    if (!db.userCategories) db.userCategories = {};
+    const current = db.userCategories[userId] || [];
+    if (!current.includes(category)) {
+      db.userCategories[userId] = [...current, category];
+      await this.writeDb(db);
+    }
   }
 
   async getAssets(userId: string): Promise<Asset[]> {
@@ -287,15 +290,19 @@ export class FirestoreRepository implements StorageRepository {
   }
 
   async getCategories(userId: string): Promise<string[]> {
-    const doc = await this.db.collection('config').doc('categories').get();
-    let list = doc.exists ? (doc.data()?.list || []) : DEFAULT_CATEGORIES;
+    const doc = await this.db.collection('userProfiles').doc(userId).get();
+    let list = doc.exists ? (doc.data()?.customCategories || []) : [];
     return this.cleanCategories(list);
   }
 
   async addCategory(userId: string, category: string): Promise<void> {
-    const categories = await this.getCategories(userId);
-    const cleaned = this.cleanCategories([...categories, category]);
-    await this.db.collection('config').doc('categories').set({ list: cleaned });
+    const docRef = this.db.collection('userProfiles').doc(userId);
+    const doc = await docRef.get();
+    let list = doc.exists ? (doc.data()?.customCategories || []) : [];
+    if (!list.includes(category)) {
+      list.push(category);
+      await docRef.set({ customCategories: list }, { merge: true });
+    }
   }
 
   async getAssets(userId: string): Promise<Asset[]> {
