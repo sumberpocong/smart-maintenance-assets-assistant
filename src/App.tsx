@@ -138,6 +138,12 @@ export default function App() {
 
   // Auth Listener
   useEffect(() => {
+    if (!auth) {
+      console.warn("Firebase Auth is not initialized.");
+      setAuthLoading(false);
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -145,6 +151,7 @@ export default function App() {
         setIdToken(token);
       } else {
         setIdToken(null);
+        setLoading(false);
       }
       setAuthLoading(false);
     });
@@ -164,6 +171,10 @@ export default function App() {
 
   const handleLogin = async () => {
     try {
+      if (!auth || !googleProvider) {
+        alert("Authentication is currently unavailable. Please ensure Firebase build-time environment variables are configured correctly in the deployment workflow.");
+        return;
+      }
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
       console.error("Login failed:", err);
@@ -172,6 +183,10 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      if (!auth) {
+        setUser(null);
+        return;
+      }
       await signOut(auth);
       setAssets([]);
       setComponents([]);
@@ -378,7 +393,10 @@ export default function App() {
   }, [sortedComponents]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     async function fetchData() {
       try {
         const [assetsRes, compRes, logsRes, catRes, useLevelLogsRes] = await Promise.all([
@@ -827,6 +845,17 @@ export default function App() {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-shadow-enterprise-lg text-center"
           >
+            {!auth && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3 text-left">
+                <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Firebase Credentials Missing</h3>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    This build is missing Firebase secrets. The app is running in safe mode. Auth & Firestore API features are disabled. Please set VITE_FIREBASE_* secrets on your repository.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="w-20 h-20 bg-app-smart/10 rounded-3xl flex items-center justify-center mx-auto mb-8">
               <Zap className="w-10 h-10 text-app-smart fill-app-smart/20" />
             </div>

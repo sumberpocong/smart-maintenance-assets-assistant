@@ -55,17 +55,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Firebase Admin
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    try {
-        admin.initializeApp({
-            credential: admin.credential.applicationDefault()
-        });
-        console.log("Firebase Admin initialized successfully.");
-    } catch (err) {
-        console.error("Firebase Admin init error:", err);
-    }
-} else {
-    console.warn("GOOGLE_APPLICATION_CREDENTIALS not set. Auth middleware will fail.");
+try {
+    admin.initializeApp();
+    console.log("Firebase Admin initialized successfully using standard application default credentials.");
+} catch (err) {
+    console.error("Firebase Admin SDK initialization failed:", err);
 }
 
 // Initialize AI
