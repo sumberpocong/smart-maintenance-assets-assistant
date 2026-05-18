@@ -2,6 +2,8 @@ node_modules/
 build/
 dist/
 dist-server/
+service-account.json
+.env.local
 coverage/
 .DS_Store
 *.log

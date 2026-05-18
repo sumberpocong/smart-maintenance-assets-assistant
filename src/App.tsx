@@ -41,6 +41,9 @@ import {
   UseLevelLog
 } from './types';
 import { calculateMaintenanceStatus } from './lib/logic';
+import { auth, googleProvider } from './lib/firebase';
+import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import { LogIn, LogOut, User as UserIcon } from 'lucide-react';
 
 const isVehicle = (category: string, name: string): boolean => {
   const c = category.toLowerCase();
@@ -129,6 +132,55 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [inputModal, setInputModal] = useState<{ open: boolean; title: string; placeholder: string; onConfirm: (val: string) => void } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [idToken, setIdToken] = useState<string | null>(null);
+
+  // Auth Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        setIdToken(token);
+      } else {
+        setIdToken(null);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Authenticated Fetch Helper
+  const authFetch = async (url: string, options: RequestInit = {}) => {
+    const token = user ? await user.getIdToken() : null;
+    const headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    return fetch(url, { ...options, headers });
+  };
+
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setAssets([]);
+      setComponents([]);
+      setLogs([]);
+      setActiveTab('home');
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
 
   const formatCurrency = (val: number | undefined | null) => {
     if (val === null || val === undefined || isNaN(val)) return '?';
@@ -139,9 +191,8 @@ export default function App() {
   const fetchAiSuggestions = async (asset: { name: string, category: string, description: string }) => {
     setIsSuggesting(true);
     try {
-      const res = await fetch('/api/ai/suggest-components', {
+      const res = await authFetch('/api/ai/suggest-components', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(asset)
       });
       const data = await res.json();
@@ -161,9 +212,8 @@ export default function App() {
     setIsPredictingCost(true);
     setPredictionCompId(componentId);
     try {
-      const res = await fetch('/api/ai/predict-cost', {
+      const res = await authFetch('/api/ai/predict-cost', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           componentName: comp.name,
           history: history.map(l => ({ cost: l.cost, date: l.timestamp }))
@@ -328,14 +378,15 @@ export default function App() {
   }, [sortedComponents]);
 
   useEffect(() => {
+    if (!user) return;
     async function fetchData() {
       try {
         const [assetsRes, compRes, logsRes, catRes, useLevelLogsRes] = await Promise.all([
-          fetch('/api/assets'),
-          fetch('/api/components'),
-          fetch('/api/logs'),
-          fetch('/api/categories'),
-          fetch('/api/uselevellogs')
+          authFetch('/api/assets'),
+          authFetch('/api/components'),
+          authFetch('/api/logs'),
+          authFetch('/api/categories'),
+          authFetch('/api/uselevellogs')
         ]);
         const assetsData = await assetsRes.json();
         const compData = await compRes.json();
@@ -354,15 +405,14 @@ export default function App() {
       }
     }
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleService = async () => {
     if (!selectedComponent) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/service', {
+      const res = await authFetch('/api/service', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           componentId: selectedComponent.id,
           metricValue: metricValue ? parseInt(metricValue) : undefined,
@@ -395,9 +445,8 @@ export default function App() {
       if (globalServiceComponentId === 'NEW') {
           if (!globalServiceNewComponentName) return;
           // Create component first
-          const compRes = await fetch('/api/components', {
+          const compRes = await authFetch('/api/components', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                   assetId: globalServiceAssetId,
                   name: globalServiceNewComponentName,
@@ -411,9 +460,8 @@ export default function App() {
           targetComponentId = newComp.id;
       }
 
-      const res = await fetch('/api/service', {
+      const res = await authFetch('/api/service', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           componentId: targetComponentId,
           metricValue: globalServiceMetricValue ? parseInt(globalServiceMetricValue) : undefined,
@@ -441,9 +489,8 @@ export default function App() {
   const handleStopTracking = async () => {
     if (!stopTrackingAssetId) return;
     try {
-      const res = await fetch(`/api/assets/${stopTrackingAssetId}`, {
+      const res = await authFetch(`/api/assets/${stopTrackingAssetId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
         // note: our simple backend just deletes it, but we could pass reason if we wanted
         body: JSON.stringify({ reason: stopTrackingReason })
       });
@@ -475,9 +522,8 @@ export default function App() {
       reader.onloadend = async () => {
         const base64data = reader.result as string;
         try {
-          const res = await fetch('/api/ai/scan-asset', {
+          const res = await authFetch('/api/ai/scan-asset', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imageBase64: base64data })
           });
           
@@ -528,15 +574,14 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch('/api/assets', {
+      const res = await authFetch('/api/assets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newAssetForm, odometer: newAssetForm.odometer ? parseFloat(newAssetForm.odometer) : undefined })
       });
       const data = await res.json();
       setAssets(prev => [...prev, data]);
       
-      const useLevelLogsRes = await fetch('/api/uselevellogs');
+      const useLevelLogsRes = await authFetch('/api/uselevellogs');
       const useLevelLogsData = await useLevelLogsRes.json();
       setUseLevelLogs(useLevelLogsData || []);
       
@@ -552,15 +597,14 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch(`/api/assets/${editingAsset.id}`, {
+      const res = await authFetch(`/api/assets/${editingAsset.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...editAssetForm, odometer: editAssetForm.odometer ? parseFloat(editAssetForm.odometer) : undefined })
       });
       const data = await res.json();
       setAssets(prev => prev.map(a => a.id === data.id ? data : a));
       
-      const useLevelLogsRes = await fetch('/api/uselevellogs');
+      const useLevelLogsRes = await authFetch('/api/uselevellogs');
       const useLevelLogsData = await useLevelLogsRes.json();
       setUseLevelLogs(useLevelLogsData || []);
       
@@ -575,9 +619,8 @@ export default function App() {
     // Actually, we can just send the data, and if they omit usage/time, we can let user use AUTO_EWMA
     const isSmartTrack = !editCompForm.staticIntervalUsage && !editCompForm.staticIntervalTime;
     try {
-      const res = await fetch(`/api/components/${editingComponent.id}`, {
+      const res = await authFetch(`/api/components/${editingComponent.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...editCompForm,
           trackingMode: isSmartTrack ? TrackingMode.AUTO_EWMA : TrackingMode.MANUAL_STATIC
@@ -593,9 +636,8 @@ export default function App() {
   const handleInlineUpdateComponent = async (comp: Component) => {
     try {
       const isSmartTrack = !inlineEditForm.staticIntervalUsage && !inlineEditForm.staticIntervalTime;
-      const res = await fetch(`/api/components/${comp.id}`, {
+      const res = await authFetch(`/api/components/${comp.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: comp.name,
           staticIntervalUsage: inlineEditForm.staticIntervalUsage,
@@ -611,9 +653,8 @@ export default function App() {
 
   const handleAddSuggestedComponent = async (assetId: string, suggestion: any) => {
     try {
-      await fetch('/api/components', {
+      await authFetch('/api/components', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId,
           name: suggestion.name,
@@ -625,7 +666,7 @@ export default function App() {
         })
       });
       // Refresh components
-      const res = await fetch('/api/components');
+      const res = await authFetch('/api/components');
       const data = await res.json();
       setComponents(data);
     } catch (err) {
@@ -636,9 +677,8 @@ export default function App() {
   const handleCreateAssetWithSuggestions = async () => {
     if (!newAssetForm.name) return;
     try {
-      const res = await fetch('/api/assets', {
+      const res = await authFetch('/api/assets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newAssetForm, odometer: newAssetForm.odometer ? parseFloat(newAssetForm.odometer) : undefined })
       });
       const asset = await res.json();
@@ -664,7 +704,7 @@ export default function App() {
     setUndoStack({ type: 'asset', data: assetToRemove, childComponents: childComps });
     
     try {
-      await fetch(`/api/assets/${id}`, { method: 'DELETE' });
+      await authFetch(`/api/assets/${id}`, { method: 'DELETE' });
       setAssets(prev => prev.filter(a => a.id !== id));
       setComponents(prev => prev.filter(c => c.assetId !== id));
       setShowUndo(true);
@@ -679,7 +719,7 @@ export default function App() {
     setUndoStack({ type: 'component', data: compToRemove });
     
     try {
-      await fetch(`/api/components/${id}`, { method: 'DELETE' });
+      await authFetch(`/api/components/${id}`, { method: 'DELETE' });
       setComponents(prev => prev.filter(c => c.id !== id));
       setShowUndo(true);
       setTimeout(() => setShowUndo(false), 5000);
@@ -691,9 +731,8 @@ export default function App() {
 
     try {
       if (undoStack.type === 'asset') {
-        const res = await fetch('/api/assets', {
+        const res = await authFetch('/api/assets', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(undoStack.data)
         });
         const restoredAsset = await res.json();
@@ -702,23 +741,21 @@ export default function App() {
         // Restore child components
         if (undoStack.childComponents) {
           for (const comp of undoStack.childComponents) {
-            await fetch('/api/components', {
+            await authFetch('/api/components', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(comp)
             });
           }
-          const compRes = await fetch('/api/components');
+          const compRes = await authFetch('/api/components');
           const compData = await compRes.json();
           setComponents(compData);
         }
       } else {
-        await fetch('/api/components', {
+        await authFetch('/api/components', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(undoStack.data)
         });
-        const compRes = await fetch('/api/components');
+        const compRes = await authFetch('/api/components');
         const compData = await compRes.json();
         setComponents(compData);
       }
@@ -734,9 +771,8 @@ export default function App() {
     const isSmartTrack = !newCompForm.staticIntervalUsage && !newCompForm.staticIntervalTime;
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/components', {
+      const res = await authFetch('/api/components', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newCompForm,
           staticIntervalUsage: newCompForm.staticIntervalUsage ? parseInt(newCompForm.staticIntervalUsage) : undefined,
@@ -777,54 +813,43 @@ export default function App() {
 
   return (
     <div className="flex bg-app-bg min-h-screen text-app-ink font-sans">
-      {/* Sidebar - Desktop Only */}
-      <aside className="w-[280px] bg-white border-r border-slate-200 hidden lg:flex flex-col p-6 h-screen sticky top-0">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-8 h-8 bg-app-ink rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-extrabold text-xl tracking-tight">SmartAssets</span>
-        </div>
 
-        <nav className="flex-1 space-y-6">
-          <div>
-            <h3 className="text-[11px] font-bold text-app-muted uppercase tracking-widest mb-4">Assets</h3>
-            <div className="space-y-2">
-              {assets.map((asset, idx) => (
-                <button 
-                  key={`asset-${asset.id}-${idx}`}
-                  onClick={() => { setActiveTab('assets'); setSelectedAssetIds([asset.id]); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-3 ${selectedAssetIds.includes(asset.id) ? 'bg-slate-100 text-app-ink dark:bg-slate-800' : 'text-app-muted hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
-                >
-                  <div className={`p-1.5 rounded-md ${asset.id === '1' ? 'bg-white shadow-sm' : 'bg-slate-50'}`}>
-                    {asset.name.includes('Bike') || asset.name.includes('Ducati') ? <Bike className="w-4 h-4" /> : <Wind className="w-4 h-4" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold tracking-tight">{asset.name}</p>
-                    <p className="text-[10px] font-bold uppercase text-slate-400">{asset.category}</p>
-                  </div>
-                </button>
-              ))}
+
+      {/* Main Content Area */}
+      {authLoading ? (
+        <div className="flex-1 flex items-center justify-center bg-slate-50">
+          <RotateCcw className="w-8 h-8 text-app-smart animate-spin" />
+        </div>
+      ) : !user ? (
+        <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-shadow-enterprise-lg text-center"
+          >
+            <div className="w-20 h-20 bg-app-smart/10 rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <Zap className="w-10 h-10 text-app-smart fill-app-smart/20" />
             </div>
-          </div>
-        </nav>
-
-        <div className="pt-6 border-t border-slate-100">
-           <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">AC</div>
-              <div>
-                <p className="text-sm font-semibold">Guest User</p>
-                <p className="text-xs text-app-muted">Free Tier</p>
-              </div>
-           </div>
+            <h1 className="text-2xl font-black text-app-ink uppercase tracking-tight mb-2">Smart Maintenance</h1>
+            <p className="text-app-muted font-medium mb-10 leading-relaxed px-4">
+              Your intelligent infrastructure companion. Sign in to manage your assets securely.
+            </p>
+            <button 
+              onClick={handleLogin}
+              className="w-full py-4 bg-app-ink text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl"
+            >
+              <LogIn className="w-5 h-5" />
+              SIGN IN WITH GOOGLE
+            </button>
+            <p className="mt-8 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Enterprise Isolation Active</p>
+          </motion.div>
         </div>
-      </aside>
-
-      {/* Main Grid Content */}
-      <main className="flex-1 flex flex-col p-4 lg:p-8 max-w-[1400px] mx-auto w-full">
+      ) : (
+        <>
+          <main className="flex-1 flex flex-col items-center justify-center lg:py-8 w-full min-h-screen">
         
         {/* Mobile Viewport Simulation */}
-        <div className="relative bg-white lg:shadow-xl lg:rounded-3xl flex flex-col w-full h-[100vh] lg:h-[calc(100vh-4rem)] overflow-hidden">
+        <div className="relative bg-white lg:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] lg:rounded-[3rem] flex flex-col w-full h-[100vh] lg:h-[90vh] max-w-[420px] lg:border-[8px] lg:border-slate-100/80 overflow-hidden ring-1 ring-slate-900/5">
           {activeTab === 'home' && sortedComponents.filter(c => c.status.urgency !== UrgencyState.HEALTHY).length > 0 && (
              <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_80px_rgba(239,68,68,0.3)] z-50 rounded-[32px]" />
           )}
@@ -1339,9 +1364,13 @@ export default function App() {
                     <div key={`asset-details-${asset.id}-${idx}`} className="bg-slate-50 border border-slate-100 rounded-3xl p-5 space-y-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-app-ink">
-                            {asset.name.includes('Bike') || asset.name.includes('Ducati') ? <Bike className="w-5 h-5" /> : <Wind className="w-5 h-5" />}
-                          </div>
+                          {asset.imageUrl ? (
+                            <img src={asset.imageUrl} alt={asset.name} className="w-12 h-12 rounded-xl object-cover shadow-sm border border-slate-100 bg-white p-1" />
+                          ) : (
+                            <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-app-ink w-12 h-12 flex items-center justify-center">
+                              {asset.name.includes('Bike') || asset.name.includes('Ducati') || asset.name.includes('Motor') || asset.name.includes('Supra') ? <Bike className="w-5 h-5" /> : <Wind className="w-5 h-5" />}
+                            </div>
+                          )}
                           <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="font-bold text-base leading-tight">{asset.name}</h3>
@@ -1586,17 +1615,24 @@ export default function App() {
 
                   <div className="bg-white rounded-[2rem] border border-slate-100 p-6 space-y-6 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-14 h-14 rounded-full bg-app-ink flex items-center justify-center text-white text-xl font-black">
-                        {language === 'en' ? 'U' : 'P'}
+                      <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200">
+                        {user?.photoURL ? (
+                          <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <UserIcon className="w-6 h-6 text-app-muted" />
+                        )}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-app-ink">{language === 'en' ? 'Guest User' : 'Pengguna Tamu'}</p>
-                        <p className="text-[10px] text-app-muted font-bold uppercase">{language === 'en' ? 'Local Account' : 'Akun Lokal'}</p>
+                        <p className="text-sm font-bold text-app-ink">{user?.displayName || 'Active User'}</p>
+                        <p className="text-[10px] text-app-muted font-bold uppercase">{user?.email || 'Connected Account'}</p>
                       </div>
                     </div>
-                    <button className="w-full flex items-center justify-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 transition-all font-bold text-sm text-app-ink">
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                      {language === 'en' ? 'Login with Google' : 'Masuk dengan Google'}
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full flex items-center justify-center gap-3 p-4 bg-red-50 hover:bg-red-100 rounded-2xl border border-red-100 transition-all font-bold text-sm text-red-600"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      {language === 'en' ? 'Sign Out' : 'Keluar'}
                     </button>
                   </div>
 
@@ -1742,19 +1778,19 @@ export default function App() {
 
           {/* Mobile Nav Bar Simulation */}
           {/* Floating Action Button (Center) */}
-          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50">
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsAddingAsset(true)}
-              className="w-14 h-14 bg-app-smart rounded-full flex items-center justify-center text-white shadow-shadow-enterprise-lg border-4 border-white dark:border-slate-950 transition-all"
+              className="w-14 h-14 bg-app-smart rounded-full flex items-center justify-center text-white shadow-[0_10px_20px_-5px_rgba(59,130,246,0.5)] border-4 border-white dark:border-slate-950 transition-all"
             >
               <Plus className="w-7 h-7" />
             </motion.button>
           </div>
 
           {/* Redesigned Bottom Nav Bar */}
-          <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg h-16 glass-nav rounded-3xl flex items-center justify-between px-6 z-40">
+          <nav className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] h-16 glass-nav rounded-3xl flex items-center justify-between px-6 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
             <div className="flex flex-1 justify-around items-center">
               <NavItem 
                   active={activeTab === 'home'} 
@@ -2682,6 +2718,8 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }

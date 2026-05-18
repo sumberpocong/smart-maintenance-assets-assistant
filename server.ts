@@ -7,17 +7,70 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TrackingMode, Asset, Component, ServiceLog, UseLevelLog } from "./src/types.ts";
 import { calculateNextEWMA } from "./src/lib/logic.ts";
 import { storage } from "./src/storage.ts";
+import admin from 'firebase-admin';
+import rateLimit from 'express-rate-limit';
+
+// --- Initialization ---
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize Firebase Admin
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    try {
+        admin.initializeApp({
+            credential: admin.credential.applicationDefault()
+        });
+        console.log("Firebase Admin initialized successfully.");
+    } catch (err) {
+        console.error("Firebase Admin init error:", err);
+    }
+} else {
+    console.warn("GOOGLE_APPLICATION_CREDENTIALS not set. Auth middleware will fail.");
+}
+
+// Initialize AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 function newId(): string {
   return crypto.randomUUID();
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// --- Middleware ---
 
-// Initialize AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const authMiddleware = async (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Unauthorized: Missing token' });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.uid = decodedToken.uid;
+        req.email = decodedToken.email;
+        next();
+    } catch (err) {
+        console.error("Auth Error:", err);
+        res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    }
+};
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests, please try again later." }
+});
+
+// Audit Logger Helper
+const auditLog = (uid: string, action: string, resourceId: string, metadata: any = {}) => {
+    console.log(`[AUDIT] ${new Date().toISOString()} | User: ${uid} | Action: ${action} | Resource: ${resourceId} |`, metadata);
+};
+
+// --- Server Startup ---
 
 async function startServer() {
   const app = express();
@@ -25,31 +78,36 @@ async function startServer() {
 
   app.use(express.json({ limit: "20mb" }));
 
-  // API Routes
-  app.get("/api/categories", async (req, res) => {
+  // Apply Auth Middleware and Rate Limiter to all API routes
+  app.use("/api/*", apiLimiter);
+  app.use("/api/*", authMiddleware);
+
+  // ── API Routes ──────────────────────────────────────────────────────────
+
+  app.get("/api/categories", async (req: any, res) => {
     try {
-      const categories = await storage.getCategories();
+      const categories = await storage.getCategories(req.uid);
       res.json(categories);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch categories" });
     }
   });
 
-  app.post("/api/categories", async (req, res) => {
+  app.post("/api/categories", async (req: any, res) => {
     try {
       const { category } = req.body;
       if (category) {
-        await storage.addCategory(category);
+        await storage.addCategory(req.uid, category);
+        auditLog(req.uid, 'CREATE_CATEGORY', category);
       }
-      const categories = await storage.getCategories();
+      const categories = await storage.getCategories(req.uid);
       res.json(categories);
     } catch (error) {
       res.status(500).json({ error: "Failed to add category" });
     }
   });
 
-  // AI Suggest Components (Dictionary-based with Gemini fallback)
-  app.post("/api/ai/suggest-components", async (req, res) => {
+  app.post("/api/ai/suggest-components", async (req: any, res) => {
     const { name, category } = req.body;
     try {
       const db: Record<string, any[]> = {
@@ -90,7 +148,6 @@ async function startServer() {
         suggestions = db["ac"];
       }
 
-      // Fall back to Gemini if dictionary misses and key is configured
       if (suggestions.length === 0 && process.env.GEMINI_API_KEY) {
         const prompt = `You are a maintenance expert. For an asset named "${name}" in category "${category}", list 3-5 common maintenance items as a JSON array.
 Each item must have: name (string), metricType ("KM", "Days", or "Hours"), suggestedIntervalUsage (number or null), suggestedIntervalTime (number in days or null), estimatedCost (number in USD).
@@ -107,8 +164,7 @@ Return ONLY the JSON array, no markdown.`;
     }
   });
 
-  // AI Predict Cost
-  app.post("/api/ai/predict-cost", async (req, res) => {
+  app.post("/api/ai/predict-cost", async (req: any, res) => {
     const { componentName, history } = req.body;
     if (!process.env.GEMINI_API_KEY) {
       return res.status(503).json({ error: "AI features require GEMINI_API_KEY" });
@@ -124,8 +180,7 @@ Predict the expected cost for the next service in the same currency. Return only
     }
   });
 
-  // AI Scan Asset from Image
-  app.post("/api/ai/scan-asset", async (req, res) => {
+  app.post("/api/ai/scan-asset", async (req: any, res) => {
     if (!process.env.GEMINI_API_KEY) {
       return res.status(503).json({ error: "AI features require GEMINI_API_KEY" });
     }
@@ -135,15 +190,10 @@ Predict the expected cost for the next service in the same currency. Return only
         return res.status(400).json({ error: "No image provided" });
       }
 
-      // Base64 string from client is usually data:image/jpeg;base64,...
       const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-      
       const prompt = `Act as a specialized Fixed Asset Clerk. Analyze the attached image.
-
 Goal: Identify the item and categorize it for a maintenance tracking system.
-
 Constraint: Return ONLY a valid JSON object. Do not include markdown formatting or prose.
-
 JSON Schema:
 {
 "asset_name": "Specific model or name",
@@ -151,7 +201,6 @@ JSON Schema:
 "description": "A 1-sentence technical summary",
 "suggested_maintenance": ["Item 1", "Item 2"]
 }
-
 If the product has a visible barcode or brand name, prioritize that for the asset_name.`;
 
       const result = await model.generateContent([
@@ -176,35 +225,35 @@ If the product has a visible barcode or brand name, prioritize that for the asse
 
   // ── CRUD Routes ──────────────────────────────────────────────────────────
 
-  app.get("/api/uselevellogs/:assetId", async (req, res) => {
+  app.get("/api/uselevellogs/:assetId", async (req: any, res) => {
     try {
       const { assetId } = req.params;
-      const logs = await storage.getUseLevelLogs(assetId);
+      const logs = await storage.getUseLevelLogs(req.uid, assetId);
       res.json(logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.get("/api/uselevellogs", async (_req, res) => {
+  app.get("/api/uselevellogs", async (req: any, res) => {
     try {
-      const logs = await storage.getUseLevelLogs();
+      const logs = await storage.getUseLevelLogs(req.uid);
       res.json(logs);
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.get("/api/assets", async (_req, res) => {
+  app.get("/api/assets", async (req: any, res) => {
     try {
-      const assets = await storage.getAssets();
+      const assets = await storage.getAssets(req.uid);
       res.json(assets);
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.post("/api/assets", async (req, res) => {
+  app.post("/api/assets", async (req: any, res) => {
     try {
       const { name, category, description, purchaseDate, odometer, useLevel } = req.body;
       if (!name || !category) {
@@ -212,6 +261,7 @@ If the product has a visible barcode or brand name, prioritize that for the asse
       }
       const newAsset: Asset = {
         id: newId(),
+        userId: req.uid,
         name,
         category,
         description,
@@ -220,33 +270,37 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         useLevel: useLevel || 'NORMAL'
       };
       
-      await storage.addAsset(newAsset);
+      await storage.addAsset(req.uid, newAsset);
       
-      await storage.addUseLevelLog({
-        id: newId(),
+      const logId = newId();
+      await storage.addUseLevelLog(req.uid, {
+        id: logId,
+        userId: req.uid,
         assetId: newAsset.id,
         oldUseLevel: undefined,
         newUseLevel: newAsset.useLevel,
         timestamp: new Date().toISOString()
       });
       
+      auditLog(req.uid, 'CREATE_ASSET', newAsset.id, { name });
       res.json(newAsset);
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.put("/api/assets/:id", async (req, res) => {
+  app.put("/api/assets/:id", async (req: any, res) => {
     try {
       const { id } = req.params;
       const { name, category, description, purchaseDate, odometer, useLevel } = req.body;
       
-      const oldAsset = await storage.getAsset(id);
+      const oldAsset = await storage.getAsset(req.uid, id);
       if (!oldAsset) return res.status(404).json({ error: "Asset not found" });
 
       if (oldAsset.useLevel !== useLevel && useLevel) {
-        await storage.addUseLevelLog({
+        await storage.addUseLevelLog(req.uid, {
           id: newId(),
+          userId: req.uid,
           assetId: id,
           oldUseLevel: oldAsset.useLevel,
           newUseLevel: useLevel,
@@ -254,41 +308,49 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         });
       }
       
-      const updatedAsset = { ...oldAsset, name, category, description, purchaseDate, odometer, useLevel };
-      await storage.updateAsset(id, updatedAsset);
+      const updatedAsset = { ...oldAsset, name, category, description, purchaseDate, odometer, useLevel, userId: req.uid };
+      await storage.updateAsset(req.uid, id, updatedAsset);
+      auditLog(req.uid, 'UPDATE_ASSET', id);
       res.json(updatedAsset);
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.delete("/api/assets/:id", async (req, res) => {
+  app.delete("/api/assets/:id", async (req: any, res) => {
     try {
       const { id } = req.params;
-      await storage.deleteAsset(id);
+      await storage.deleteAsset(req.uid, id);
+      auditLog(req.uid, 'DELETE_ASSET', id);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.get("/api/components", async (_req, res) => {
+  app.get("/api/components", async (req: any, res) => {
     try {
-      const components = await storage.getComponents();
+      const components = await storage.getComponents(req.uid);
       res.json(components);
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.post("/api/components", async (req, res) => {
+  app.post("/api/components", async (req: any, res) => {
     try {
       const { assetId, name, metricType, trackingMode, staticIntervalUsage, staticIntervalTime, useLevel, estimatedCost, purchaseDate } = req.body;
       if (!assetId || !name) {
         return res.status(400).json({ error: "assetId and name are required" });
       }
+
+      // Verify asset ownership
+      const asset = await storage.getAsset(req.uid, assetId);
+      if (!asset) return res.status(403).json({ error: "Unauthorized: Asset not found or not yours" });
+
       const newComponent: Component & { useLevel?: string } = {
         id: newId(),
+        userId: req.uid,
         assetId,
         name,
         metricType,
@@ -303,19 +365,20 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         purchaseDate
       };
       
-      await storage.addComponent(newComponent);
+      await storage.addComponent(req.uid, newComponent);
+      auditLog(req.uid, 'CREATE_COMPONENT', newComponent.id, { assetId, name });
       res.json(newComponent);
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.put("/api/components/:id", async (req, res) => {
+  app.put("/api/components/:id", async (req: any, res) => {
     try {
       const { id } = req.params;
       const { name, staticIntervalUsage, staticIntervalTime, trackingMode } = req.body;
       
-      const comp = await storage.getComponent(id);
+      const comp = await storage.getComponent(req.uid, id);
       if (!comp) return res.status(404).json({ error: "Component not found" });
 
       const updates: Partial<Component> = {};
@@ -324,48 +387,49 @@ If the product has a visible barcode or brand name, prioritize that for the asse
       if (staticIntervalTime !== undefined) updates.staticIntervalTime = staticIntervalTime ? parseInt(staticIntervalTime) : undefined;
       if (trackingMode !== undefined) updates.trackingMode = trackingMode;
       
-      await storage.updateComponent(id, updates);
+      await storage.updateComponent(req.uid, id, updates);
+      auditLog(req.uid, 'UPDATE_COMPONENT', id);
       
-      // Fetch updated component for response
-      const updatedComp = await storage.getComponent(id);
+      const updatedComp = await storage.getComponent(req.uid, id);
       res.json(updatedComp);
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.delete("/api/components/:id", async (req, res) => {
+  app.delete("/api/components/:id", async (req: any, res) => {
     try {
       const { id } = req.params;
-      await storage.deleteComponent(id);
+      await storage.deleteComponent(req.uid, id);
+      auditLog(req.uid, 'DELETE_COMPONENT', id);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.get("/api/logs", async (_req, res) => {
+  app.get("/api/logs", async (req: any, res) => {
     try {
-      const logs = await storage.getLogs();
+      const logs = await storage.getLogs(req.uid);
       res.json(logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.get("/api/logs/:componentId", async (req, res) => {
+  app.get("/api/logs/:componentId", async (req: any, res) => {
     try {
-      const logs = await storage.getLogs(req.params.componentId);
+      const logs = await storage.getLogs(req.uid, req.params.componentId);
       res.json(logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.post("/api/service", async (req, res) => {
+  app.post("/api/service", async (req: any, res) => {
     try {
       const { componentId, metricValue, notes, cost } = req.body;
-      const component = await storage.getComponent(componentId);
+      const component = await storage.getComponent(req.uid, componentId);
       if (!component) return res.status(404).json({ error: "Component not found" });
 
       const actualUsage = component.currentAccumulatedUsage;
@@ -373,6 +437,7 @@ If the product has a visible barcode or brand name, prioritize that for the asse
 
       const newLog: ServiceLog = {
         id: newId(),
+        userId: req.uid,
         componentId,
         timestamp: new Date().toISOString(),
         actualMetricValue: usedValue,
@@ -380,7 +445,7 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         cost: cost != null ? parseFloat(cost) : undefined
       };
       
-      await storage.addLog(newLog);
+      await storage.addLog(req.uid, newLog);
 
       const updates: Partial<Component> = {
         currentAccumulatedUsage: 0,
@@ -396,10 +461,10 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         updates.estimatedCost = parseFloat(cost);
       }
       
-      await storage.updateComponent(componentId, updates);
+      await storage.updateComponent(req.uid, componentId, updates);
+      auditLog(req.uid, 'LOG_SERVICE', componentId, { logId: newLog.id });
       
-      const updatedComponent = await storage.getComponent(componentId);
-
+      const updatedComponent = await storage.getComponent(req.uid, componentId);
       res.json({ success: true, component: updatedComponent, log: newLog });
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });

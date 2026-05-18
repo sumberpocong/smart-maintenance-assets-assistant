@@ -13,16 +13,19 @@ export type UseLevel = 'LEISURE' | 'NORMAL' | 'HEAVY' | 'EXTREME';
 
 export interface Asset {
   id: string;
+  userId: string;
   name: string;
   category: string;
   description?: string;
   purchaseDate?: string; // ISO string
   odometer?: number;
   useLevel?: UseLevel;
+  imageUrl?: string;
 }
 
 export interface Component {
   id: string;
+  userId: string;
   assetId: string;
   name: string;
   metricType: string;
@@ -39,6 +42,7 @@ export interface Component {
 
 export interface ServiceLog {
   id: string;
+  userId: string;
   componentId: string;
   timestamp: string;
   actualMetricValue: number;
@@ -58,6 +62,7 @@ export interface AppNotification {
 
 export interface UseLevelLog {
   id: string;
+  userId: string;
   assetId: string;
   oldUseLevel?: UseLevel;
   newUseLevel?: UseLevel;

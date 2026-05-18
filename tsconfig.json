@@ -30,7 +30,8 @@
       "babel__template",
       "babel__traverse",
       "connect",
-      "estree"
+      "estree",
+      "vite/client"
     ]
   }
 }
