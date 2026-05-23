@@ -7,7 +7,7 @@ on:
       - master
 
 env:
-  PROJECT_ID: smart-maintenance-assets-847242921876
+  PROJECT_ID: juara-495521
   REGION: us-central1
   SERVICE: smart-maintenance-assets
 
