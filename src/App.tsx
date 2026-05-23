@@ -840,10 +840,15 @@ export default function App() {
     return (
       <div className="min-h-screen bg-app-bg text-app-ink flex items-center justify-center">
         <motion.div 
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} 
-          transition={{ repeat: Infinity, duration: 1.5 }}
+          animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }} 
+          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+          className="w-20 h-20 bg-slate-100 dark:bg-neutral-800 rounded-[2rem] flex items-center justify-center shadow-sm border border-slate-200/50 dark:border-neutral-700/50"
         >
-          <Zap className="w-12 h-12 text-yellow-400 fill-yellow-400" />
+          <img 
+            src="/images/rabet_logo_transparent_192px.png" 
+            alt="Rabet Logo" 
+            className="w-12 h-12 object-contain" 
+          />
         </motion.div>
       </div>
     );
@@ -876,11 +881,11 @@ export default function App() {
                 </div>
               </div>
             )}
-            <div className="flex justify-center mb-8">
+            <div className="w-24 h-24 bg-app-smart/10 dark:bg-neutral-800/80 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-sm border border-app-smart/20 dark:border-neutral-700/50">
               <img 
-                src="/images/rabet_logo_transparent_512px.png" 
+                src="/images/rabet_logo_transparent_256px.png" 
                 alt="Rabet Logo" 
-                className="w-44 h-auto object-contain drop-shadow-md" 
+                className="w-14 h-14 object-contain" 
               />
             </div>
             <h1 className="text-2xl font-black text-app-ink dark:text-white uppercase tracking-tight mb-2">Rabet</h1>
@@ -1026,8 +1031,12 @@ export default function App() {
                   >
                      <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                            <Zap className="w-5 h-5 text-app-smart fill-app-smart/20" />
+                          <div className="w-10 h-10 bg-white dark:bg-neutral-800 rounded-xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-neutral-700/50">
+                            <img 
+                              src="/images/rabet_logo_transparent_192px.png" 
+                              alt="Rabet Logo" 
+                              className="w-6 h-6 object-contain" 
+                            />
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-[9px] font-bold w-fit mb-0.5">
