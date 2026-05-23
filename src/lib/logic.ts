@@ -26,17 +26,40 @@ export interface MaintenanceStatus {
 /**
  * Mode A: Smart Predict (EWMA Engine)
  * Formula: Et = α * At + (1 - α) * Et-1
+ * Enhanced to apply useLevel modifiers and blend with global averages.
  * 
  * @param actualInterval The actual interval logged by the user (At)
  * @param previousExpected The previous predicted interval (Et-1)
+ * @param useLevel Subjective usage modifier (LEISURE, NORMAL, HEAVY, EXTREME)
+ * @param globalAverageLifespan Baseline from global crowdsourced database
  * @param alpha Smoothing factor (default 0.3)
  */
 export function calculateNextEWMA(
   actualInterval: number,
   previousExpected: number,
+  useLevel: 'LEISURE' | 'NORMAL' | 'HEAVY' | 'EXTREME' = 'NORMAL',
+  globalAverageLifespan?: number | null,
   alpha: number = 0.3
 ): number {
-  return alpha * actualInterval + (1 - alpha) * previousExpected;
+  // 1. Calculate standard EWMA prediction
+  let nextPredicted = alpha * actualInterval + (1 - alpha) * previousExpected;
+
+  // 2. Blend with global average if available (80% local history, 20% global crowd-sourced baseline)
+  if (globalAverageLifespan != null && globalAverageLifespan > 0) {
+    nextPredicted = 0.8 * nextPredicted + 0.2 * globalAverageLifespan;
+  }
+
+  // 3. Apply useLevel modifier to shift predicted interval
+  let modifier = 1.0;
+  if (useLevel === 'LEISURE') {
+    modifier = 1.25; // Extends expected lifespan
+  } else if (useLevel === 'HEAVY') {
+    modifier = 0.8;  // Shortens expected lifespan
+  } else if (useLevel === 'EXTREME') {
+    modifier = 0.6;  // Extreme wear, shortens lifespan significantly
+  }
+
+  return Math.round(nextPredicted * modifier);
 }
 
 /**

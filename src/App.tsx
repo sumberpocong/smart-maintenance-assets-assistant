@@ -114,7 +114,7 @@ export default function App() {
   const [predictionCompId, setPredictionCompId] = useState<string | null>(null);
   const [currency, setCurrency] = useState<'Rp' | '$' | '€' | '£'>('Rp');
   const [language, setLanguage] = useState<'en' | 'id'>('en');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [exchangeRate, setExchangeRate] = useState<number>(15000); // 1 USD = 15000 IDR
   const [isGlobalServiceModalOpen, setIsGlobalServiceModalOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
@@ -172,19 +172,39 @@ export default function App() {
   const handleLogin = async () => {
     try {
       if (!auth || !googleProvider) {
-        alert("Authentication is currently unavailable. Please ensure Firebase build-time environment variables are configured correctly in the deployment workflow.");
+        alert("Authentication is currently unavailable. Bypassing to Guest Mode instead.");
+        handleGuestLogin();
         return;
       }
       await signInWithPopup(auth, googleProvider);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login failed:", err);
+      // Automatically prompt to use Guest Mode if Google Auth popup fails or gets closed
+      if (confirm("Google Sign-In popup was closed or failed (possibly because this domain is not yet added to your Firebase Authorized Domains list). Would you like to continue as a Guest instead?")) {
+        handleGuestLogin();
+      }
     }
+  };
+
+  const handleGuestLogin = () => {
+    const guestUser = {
+      uid: 'guest-user',
+      displayName: 'Guest Member',
+      email: 'guest@smartmaintenance.local',
+      photoURL: null,
+      getIdToken: async () => 'guest-token'
+    } as any;
+    setUser(guestUser);
   };
 
   const handleLogout = async () => {
     try {
-      if (!auth) {
+      if (!auth || user?.uid === 'guest-user') {
         setUser(null);
+        setAssets([]);
+        setComponents([]);
+        setLogs([]);
+        setActiveTab('home');
         return;
       }
       await signOut(auth);
@@ -839,55 +859,132 @@ export default function App() {
           <RotateCcw className="w-8 h-8 text-app-smart animate-spin" />
         </div>
       ) : !user ? (
-        <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+        <div className="flex-1 flex items-center justify-center p-6 bg-slate-50 dark:bg-neutral-950">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md bg-white p-8 rounded-[2.5rem] shadow-shadow-enterprise-lg text-center"
+            className="w-full max-w-md bg-white dark:bg-neutral-900 p-8 rounded-[2.5rem] shadow-shadow-enterprise-lg text-center border border-slate-100 dark:border-neutral-800"
           >
             {!auth && (
-              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3 text-left">
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30 rounded-2xl flex gap-3 text-left">
                 <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-1">Firebase Credentials Missing</h3>
-                  <p className="text-xs text-amber-700 leading-relaxed">
+                  <h3 className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider mb-1">Firebase Credentials Missing</h3>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
                     This build is missing Firebase secrets. The app is running in safe mode. Auth & Firestore API features are disabled. Please set VITE_FIREBASE_* secrets on your repository.
                   </p>
                 </div>
               </div>
             )}
-            <div className="w-20 h-20 bg-app-smart/10 rounded-3xl flex items-center justify-center mx-auto mb-8">
-              <Zap className="w-10 h-10 text-app-smart fill-app-smart/20" />
+            <div className="flex justify-center mb-8">
+              <img 
+                src="/images/rabet_logo_transparent_512px.png" 
+                alt="Rabet Logo" 
+                className="w-44 h-auto object-contain drop-shadow-md" 
+              />
             </div>
-            <h1 className="text-2xl font-black text-app-ink uppercase tracking-tight mb-2">Smart Maintenance</h1>
-            <p className="text-app-muted font-medium mb-10 leading-relaxed px-4">
-              Your intelligent infrastructure companion. Sign in to manage your assets securely.
+            <h1 className="text-2xl font-black text-app-ink dark:text-white uppercase tracking-tight mb-2">Rabet</h1>
+            <p className="text-app-muted dark:text-neutral-400 font-medium mb-10 leading-relaxed px-4">
+              Your intelligent infrastructure companion. Sign in to manage and predict asset health with smart ML capabilities.
             </p>
-            <button 
-              onClick={handleLogin}
-              className="w-full py-4 bg-app-ink text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl"
-            >
-              <LogIn className="w-5 h-5" />
-              SIGN IN WITH GOOGLE
-            </button>
-            <p className="mt-8 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Enterprise Isolation Active</p>
+            <div className="space-y-3">
+              <button 
+                onClick={handleLogin}
+                className="w-full py-4 bg-app-ink dark:bg-white dark:text-black text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl hover:opacity-90 cursor-pointer"
+              >
+                <LogIn className="w-5 h-5" />
+                SIGN IN WITH GOOGLE
+              </button>
+              
+              <button 
+                onClick={handleGuestLogin}
+                className="w-full py-4 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700/80 text-app-ink dark:text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all border border-slate-200/50 dark:border-neutral-700/50 cursor-pointer"
+              >
+                <UserIcon className="w-5 h-5 text-slate-500 dark:text-neutral-400" />
+                CONTINUE AS GUEST / DEMO
+              </button>
+            </div>
+            <p className="mt-8 text-[10px] font-black text-slate-300 dark:text-neutral-600 uppercase tracking-[0.2em]">Enterprise Isolation Active</p>
           </motion.div>
         </div>
       ) : (
         <>
+          {/* Desktop Sidebar Navigation for B2B Fleet Managers */}
+          <div className="hidden lg:flex flex-col w-72 bg-slate-900 text-white p-6 border-r border-slate-800 shrink-0 select-none">
+            <div className="flex items-center gap-3 mb-10">
+              <img 
+                src="/images/rabet_logo_transparent_192px.png" 
+                alt="Rabet Logo" 
+                className="h-10 w-auto object-contain brightness-0 invert" 
+              />
+              <div className="flex flex-col">
+                <span className="font-extrabold tracking-tight text-xl text-white">RABET</span>
+                <span className="text-[10px] font-bold text-app-smart uppercase tracking-widest">B2B Fleet Panel</span>
+              </div>
+            </div>
+
+            <nav className="space-y-2 flex-1">
+              {[
+                { id: 'home', label: 'Dashboard', icon: Home },
+                { id: 'status', label: 'Component Status', icon: ClipboardList },
+                { id: 'assets', label: 'Fleet Assets', icon: Box },
+                { id: 'settings', label: 'System Settings', icon: Settings },
+              ].map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as any)}
+                    className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 cursor-pointer ${isActive ? 'bg-app-smart text-white shadow-lg shadow-app-smart/30' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Quick Stats Widget in Sidebar */}
+            <div className="mt-auto bg-slate-800/40 border border-slate-700/30 rounded-2xl p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fleet Status</span>
+                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${stats.urgentCount > 0 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
+                  {stats.urgentCount > 0 ? 'Attention Required' : 'All Healthy'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-800/50 rounded-xl p-2.5 text-center border border-slate-700/20">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase">Assets</span>
+                  <span className="text-lg font-black text-white block mt-0.5">{stats.totalAssets}</span>
+                </div>
+                <div className="bg-slate-800/50 rounded-xl p-2.5 text-center border border-slate-700/20">
+                  <span className="text-[10px] font-bold text-slate-400 block uppercase">Urgent</span>
+                  <span className={`text-lg font-black block mt-0.5 ${stats.urgentCount > 0 ? 'text-red-400' : 'text-white'}`}>{stats.urgentCount}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <main className="flex-1 flex flex-col items-center justify-center lg:py-8 w-full min-h-screen">
         
         {/* Mobile Viewport Simulation */}
-        <div className="relative bg-white lg:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] lg:rounded-[3rem] flex flex-col w-full h-screen lg:h-[90vh] max-w-[420px] lg:border-8 lg:border-slate-100/80 overflow-hidden ring-1 ring-slate-900/5">
+        <div className="relative bg-white dark:bg-neutral-900 lg:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] lg:rounded-[3rem] flex flex-col w-full h-screen lg:h-[90vh] max-w-[420px] lg:border-8 lg:border-slate-100/80 dark:lg:border-neutral-800 overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/5">
           {activeTab === 'home' && sortedComponents.filter(c => c.status.urgency !== UrgencyState.HEALTHY).length > 0 && (
              <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_80px_rgba(239,68,68,0.3)] z-50 rounded-[32px]" />
           )}
-          <header className="px-6 pt-10 pb-4 sticky top-0 bg-white/95 backdrop-blur-sm z-10">
+          <header className="px-6 pt-10 pb-4 sticky top-0 bg-transparent backdrop-blur-sm z-10 border-b border-transparent">
             <div className="flex justify-between items-start mb-1 relative z-10">
               <div>
-                <h1 className="text-2xl font-extrabold tracking-tight text-app-ink">{language === 'en' ? 'Overview' : 'Ikhtisar'}</h1>
-                <p className="text-app-muted text-sm font-medium">
-                  {componentsWithStatus.filter(c => c.status.urgency !== UrgencyState.HEALTHY).length} {language === 'en' ? 'Urgent Tasks' : 'Tugas Mendesak'}
+                <div className="flex items-center gap-2 mb-1">
+                  <img 
+                    src="/images/rabet_logo_transparent_192px.png" 
+                    alt="Rabet Logo" 
+                    className="h-8 w-auto object-contain dark:brightness-0 dark:invert" 
+                  />
+                </div>
+                <p className="text-app-muted dark:text-neutral-400 text-xs font-medium lowercase">
+                  {componentsWithStatus.filter(c => c.status.urgency !== UrgencyState.HEALTHY).length} {language === 'en' ? 'urgent tasks' : 'tugas mendesak'}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -903,11 +1000,11 @@ export default function App() {
                 <motion.button 
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsNotificationsOpen(true)}
-                  className="p-2.5 bg-slate-50 rounded-2xl text-app-muted border border-slate-100 relative"
+                  className="w-10 h-10 bg-slate-50 dark:bg-neutral-800/80 rounded-full text-app-muted border border-slate-100 dark:border-neutral-700/50 flex items-center justify-center relative active:scale-95 shadow-sm"
                 >
-                  <Bell className="w-5 h-5" />
+                  <Bell className="w-5 h-5 text-app-muted" />
                   {notifications.filter(n => !n.read).length > 0 && (
-                    <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-app-critical border-2 border-white rounded-full" />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-app-critical rounded-full" />
                   )}
                 </motion.button>
               </div>
@@ -917,129 +1014,129 @@ export default function App() {
           <div className="flex-1 overflow-y-auto px-6 pb-32">
             {activeTab === 'home' ? (
               <div className="space-y-6 pt-4">
-                {/* Enterprise Maintenance Pulse */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="enterprise-card p-6 border-l-4 border-l-app-smart"
-                >
-                   <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-app-smart/10 rounded-xl">
-                          <Zap className="w-5 h-5 text-app-smart fill-app-smart/20" />
-                        </div>
-                        <div>
-                          <h4 className="text-[10px] font-black text-app-muted uppercase tracking-[0.2em]">{language === 'en' ? 'Health Pulse' : 'Denyut Kesehatan'}</h4>
-                          <p className="text-sm font-bold text-app-ink">Infrastructure status</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 px-3 py-1 bg-app-healthy/10 rounded-full border border-app-healthy/20">
-                        <div className="w-1.5 h-1.5 bg-app-healthy rounded-full animate-pulse" />
-                        <span className="text-[10px] font-black text-app-healthy uppercase tracking-wider">
-                          {(stats.urgentCount === 0 ? 100 : Math.max(0, 100 - (stats.urgentCount * 15)))}% Stable
-                        </span>
-                      </div>
-                   </div>
-                   <p className="text-xs text-app-muted font-medium leading-relaxed">
-                     System is currently monitoring <span className="text-app-ink font-bold">{stats.totalComponents}</span> high-precision components. 
-                     Calibration is active and optimized for <span className="text-app-ink font-bold">{stats.totalAssets}</span> managed assets.
-                   </p>
-                </motion.div>
-
-                {/* Enterprise Financial Overview */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-slate-950 p-6 rounded-[2.5rem] shadow-shadow-enterprise-lg flex flex-col relative overflow-hidden group"
-                >
-                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-app-smart/10 rounded-full blur-[80px]" />
-                    
-                    <div className="flex justify-between items-center mb-6 relative z-10">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-4 bg-app-smart rounded-full" />
-                        <h3 className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em]">{language === 'en' ? 'Expenditure Overview' : 'Ringkasan Pengeluaran'}</h3>
-                      </div>
-                      <div className="px-2 py-1 bg-white/5 rounded-lg border border-white/10">
-                         <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">IDR</span>
-                      </div>
-                    </div>
-    
-                    <div className="grid grid-cols-2 gap-8 relative z-10">
-                      <div className="space-y-1">
-                        <p className="metric-label text-white/30">{language === 'en' ? 'Invested' : 'Investasi'}</p>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-black text-white tracking-tighter">{formatCurrency(stats.totalSpent)}</span>
-                        </div>
-                      </div>
-                      <div className="space-y-1 text-right border-l border-white/5 pl-8">
-                        <p className="metric-label text-white/30">{language === 'en' ? 'Projected' : 'Proyeksi'}</p>
-                        <div className="flex items-baseline gap-1 justify-end">
-                          <span className="text-3xl font-black text-app-smart tracking-tighter">{formatCurrency(stats.predictedCost)}</span>
-                        </div>
-                      </div>
-                    </div>
-    
-                    <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
-                        <div className="flex justify-between items-end mb-2">
-                           <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Maintenance Ratio</p>
-                           <p className="text-xs font-black text-white">
-                                {stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100).toFixed(0) : 0}%
-                           </p>
-                        </div>
-                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${Math.min(stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100) : 0, 100)}%` }}
-                                className="h-full bg-app-smart shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                            />
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Enterprise Quick Stats Grid */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Maintenance Pulse */}
+                <div className="space-y-2">
+                  <h4 className="text-[9px] font-extrabold text-app-muted uppercase tracking-[0.2em] pl-1">
+                    MAINTENANCE PULSE
+                  </h4>
                   <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="enterprise-card p-6 flex flex-col justify-between group hover:border-app-smart/30 transition-all"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="enterprise-card p-5 bg-neutral-900 border border-slate-100/10 rounded-2xl flex flex-col gap-3 shadow-md"
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl group-hover:scale-110 transition-transform">
-                        <Box className="w-5 h-5 text-app-ink" />
-                      </div>
-                      <p className="metric-label text-right">Managed<br/>Assets</p>
-                    </div>
-                    <div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="metric-value text-app-ink">{stats.totalAssets}</span>
-                        <span className="text-[10px] font-bold text-app-muted uppercase tracking-wider">Units</span>
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    onClick={() => setActiveTab('status')}
-                    className={`enterprise-card p-6 flex flex-col justify-between group cursor-pointer active:scale-95 transition-all ${stats.urgentCount > 0 ? 'border-app-critical/20 hover:border-app-critical/40' : 'hover:border-app-smart/30'}`}
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className={`p-2.5 rounded-xl transition-colors ${stats.urgentCount > 0 ? 'bg-app-critical/10' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                        <AlertCircle className={`w-5 h-5 ${stats.urgentCount > 0 ? 'text-app-critical' : 'text-app-muted'}`} />
-                      </div>
-                      <p className="metric-label text-right">Attention<br/>Required</p>
-                    </div>
-                    <div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className={`metric-value ${stats.urgentCount > 0 ? 'text-app-critical' : 'text-app-ink'}`}>{stats.urgentCount}</span>
-                        <span className="text-[10px] font-bold text-app-muted uppercase tracking-wider">Tasks</span>
-                      </div>
-                    </div>
+                     <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                            <Zap className="w-5 h-5 text-app-smart fill-app-smart/20" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-[9px] font-bold w-fit mb-0.5">
+                              <span className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />
+                              <span>{(stats.urgentCount === 0 ? 100 : Math.max(0, 100 - (stats.urgentCount * 15)))}% stable</span>
+                            </div>
+                            <p className="text-sm font-bold text-[#ffffff] leading-tight">Infrastructure health</p>
+                          </div>
+                        </div>
+                     </div>
+                     <p className="text-xs text-app-muted font-medium leading-relaxed pl-1">
+                       Tracking <span className="text-app-smart font-semibold">{stats.totalComponents} components</span> · Smart Calibration active
+                     </p>
                   </motion.div>
                 </div>
+
+                {/* Expenditure Overview */}
+                <div className="space-y-2">
+                  <h4 className="text-[9px] font-extrabold text-app-muted uppercase tracking-[0.2em] pl-1">
+                    EXPENDITURE OVERVIEW
+                  </h4>
+                  <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="bg-neutral-900 border border-slate-100/10 p-5 rounded-2xl shadow-md flex flex-col relative overflow-hidden group"
+                  >
+                      <div className="grid grid-cols-2 gap-4 relative z-10">
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-extrabold text-app-muted uppercase tracking-widest pl-0.5">INVESTED</p>
+                          <div className="flex items-baseline">
+                            <span className="text-2xl font-extrabold text-[#ffffff] tracking-tight">{formatCurrency(stats.totalSpent)}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="text-[9px] font-extrabold text-app-muted uppercase tracking-widest pr-0.5">PROJECTED</p>
+                          <div className="flex items-baseline justify-end">
+                            <span className="text-2xl font-extrabold text-app-smart tracking-tight">{formatCurrency(stats.predictedCost)}</span>
+                          </div>
+                        </div>
+                      </div>
+      
+                      <div className="mt-4 pt-4 border-t border-slate-100/10 flex justify-between items-center relative z-10 text-xs">
+                          <p className="text-[10px] font-extrabold text-app-muted uppercase tracking-widest pl-0.5">
+                            Ratio: {stats.totalSpent > 0 ? ((stats.predictedCost || 0) / stats.totalSpent * 100).toFixed(0) : 0}%
+                          </p>
+                          <div className="px-2 py-0.5 bg-blue-500/10 rounded border border-blue-500/20 text-[9px] font-extrabold text-app-smart uppercase tracking-widest">
+                            IDR
+                          </div>
+                      </div>
+                  </motion.div>
+                </div>
+
+                {/* Infrastructure Stats Grid */}
+                <div className="space-y-2">
+                  <h4 className="text-[9px] font-extrabold text-app-muted uppercase tracking-[0.2em] pl-1">
+                    INFRASTRUCTURE STATS
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <motion.div 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="enterprise-card p-5 bg-neutral-900 border border-slate-100/10 rounded-2xl flex flex-col justify-between h-28 group transition-all"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="p-2 bg-slate-800/80 rounded-xl">
+                          <Box className="w-4 h-4 text-app-muted" />
+                        </div>
+                        <p className="text-[8px] font-extrabold text-app-muted uppercase tracking-widest text-right">MANAGED<br/>ASSETS</p>
+                      </div>
+                      <div className="pl-0.5">
+                        <p className="text-2xl font-extrabold text-[#ffffff] leading-none mb-1">{stats.totalAssets}</p>
+                        <p className="text-[9px] font-bold text-app-muted uppercase tracking-wider">items tracked</p>
+                      </div>
+                    </motion.div>
+
+                    <motion.div 
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                      onClick={() => setActiveTab('status')}
+                      className="enterprise-card p-5 bg-neutral-900 border border-slate-100/10 rounded-2xl flex flex-col justify-between h-28 group cursor-pointer active:scale-95 transition-all"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="p-2 bg-slate-800/80 rounded-xl">
+                          <AlertCircle className="w-4 h-4 text-app-muted" />
+                        </div>
+                        <p className="text-[8px] font-extrabold text-app-muted uppercase tracking-widest text-right">ATTENTION<br/>REQUIRED</p>
+                      </div>
+                      <div className="pl-0.5">
+                        <p className="text-2xl font-extrabold text-[#ffffff] leading-none mb-1">{stats.urgentCount}</p>
+                        <p className="text-[9px] font-bold text-app-muted uppercase tracking-wider">open tasks</p>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* Info banner when no assets are added yet */}
+                {stats.totalAssets === 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2.5 p-3.5 bg-neutral-900/60 border border-slate-100/5 rounded-xl text-[11px] text-app-muted pl-4"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 text-app-muted shrink-0" />
+                    <span>No assets added yet. Go to Assets to get started.</span>
+                  </motion.div>
+                )}
 
               </div>
             ) : activeTab === 'status' ? (
@@ -1806,52 +1903,32 @@ export default function App() {
 
 
           {/* Mobile Nav Bar Simulation */}
-          {/* Floating Action Button (Center) */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50">
-            <motion.button 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsAddingAsset(true)}
-              className="w-14 h-14 bg-app-smart rounded-full flex items-center justify-center text-white shadow-[0_10px_20px_-5px_rgba(59,130,246,0.5)] border-4 border-white dark:border-slate-950 transition-all"
-            >
-              <Plus className="w-7 h-7" />
-            </motion.button>
-          </div>
-
           {/* Redesigned Bottom Nav Bar */}
-          <nav className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] h-16 glass-nav rounded-3xl flex items-center justify-between px-6 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-            <div className="flex flex-1 justify-around items-center">
-              <NavItem 
-                  active={activeTab === 'home'} 
-                  onClick={() => setActiveTab('home')}
-                  icon={<Home className="w-5 h-5" />} 
-                  label="Overview" 
-              />
-              <NavItem 
-                  active={activeTab === 'status'} 
-                  onClick={() => setActiveTab('status')}
-                  icon={<Zap className="w-5 h-5" />} 
-                  label="Status" 
-              />
-            </div>
-            
-            {/* Center Spacer for FAB */}
-            <div className="w-16 shrink-0" />
-
-            <div className="flex flex-1 justify-around items-center">
-              <NavItem 
-                  active={activeTab === 'assets'} 
-                  onClick={() => setActiveTab('assets')}
-                  icon={<Box className="w-5 h-5" />} 
-                  label="Assets" 
-              />
-              <NavItem 
-                  active={activeTab === 'settings'} 
-                  onClick={() => setActiveTab('settings')}
-                  icon={<Settings className="w-5 h-5" />} 
-                  label="Settings" 
-              />
-            </div>
+          <nav className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[92%] h-16 glass-nav rounded-3xl flex items-center justify-around px-2 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+            <NavItem 
+                active={activeTab === 'home'} 
+                onClick={() => setActiveTab('home')}
+                icon={<Home className="w-5 h-5" />} 
+                label="Overview" 
+            />
+            <NavItem 
+                active={activeTab === 'status'} 
+                onClick={() => setActiveTab('status')}
+                icon={<Zap className="w-5 h-5" />} 
+                label="Status" 
+            />
+            <NavItem 
+                active={activeTab === 'assets'} 
+                onClick={() => setActiveTab('assets')}
+                icon={<Box className="w-5 h-5" />} 
+                label="Assets" 
+            />
+            <NavItem 
+                active={activeTab === 'settings'} 
+                onClick={() => setActiveTab('settings')}
+                icon={<Settings className="w-5 h-5" />} 
+                label="Settings" 
+            />
           </nav>
         </div>
 

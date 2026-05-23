@@ -7,9 +7,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { TrackingMode, Asset, Component, ServiceLog, UseLevelLog } from "./src/types.ts";
 import { calculateNextEWMA } from "./src/lib/logic.ts";
 import { storage } from "./src/storage.ts";
+import { testDbConnection } from "./src/db/index.ts";
 import admin from 'firebase-admin';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
+
 
 // --- Validation Schemas ---
 const assetSchema = z.object({
@@ -79,6 +81,14 @@ const authMiddleware = async (req: any, res: any, next: any) => {
     }
 
     const token = authHeader.split('Bearer ')[1];
+    
+    // Support frictionless Guest / Demo mode access
+    if (token === 'guest-token') {
+        req.uid = 'guest-user';
+        req.email = 'guest@smartmaintenance.local';
+        return next();
+    }
+
     try {
         const decodedToken = await admin.auth().verifyIdToken(token);
         req.uid = decodedToken.uid;
@@ -108,6 +118,16 @@ const auditLog = (uid: string, action: string, resourceId: string, metadata: any
 async function startServer() {
   const app = express();
   const PORT = parseInt(process.env.PORT || "3000", 10);
+
+  // Test PostgreSQL Connection if DATABASE_URL is provided
+  if (process.env.DATABASE_URL) {
+    console.log("[server] Connecting to PostgreSQL database...");
+    const isConnected = await testDbConnection();
+    if (!isConnected) {
+      console.error("[server] DATABASE_URL is defined but connection failed! Exiting.");
+      process.exit(1);
+    }
+  }
 
   // Trust proxy for rate limiting behind Cloud Run load balancer
   app.set('trust proxy', 1);
@@ -303,7 +323,41 @@ If the product has a visible barcode or brand name, prioritize that for the asse
       const parsed = assetSchema.parse(req.body);
       const { name, category, description, purchaseDate, odometer, useLevel } = parsed;
       
-      const newAsset: Asset = {
+      // AI Taxonomy Mapper: Find/create global catalog model
+      let globalModelId: string | null = null;
+      if (process.env.GEMINI_API_KEY && storage.getOrCreateGlobalAssetCatalog) {
+        try {
+          console.log(`[ai-mapper] Running taxonomy mapping for asset: "${name}" (${category})...`);
+          const mappingPrompt = `You are a standardized cataloging expert for machines, vehicles, and equipment.
+For a user-defined asset named "${name}" in the category "${category}" (description: "${description || ''}"), find or create a standard, universal model ID.
+Requirements:
+1. The model ID must be lowercase, alphanumeric, with words separated by underscores (e.g. "honda_civic_2020", "lg_dual_inverter_ac", "honda_supra_x_125").
+2. Standardize similar items to the same model ID (e.g., "Honda Supra X 125cc", "Supra X 125" should both map to "honda_supra_x_125").
+3. Determine a reasonable estimated baseline lifespan for this asset class under average usage:
+   - "averageLifespanUsage": default usage limit before service is needed (e.g. for engines, oil change at 2000 KM. For appliances, filter clean at 100 Days). Return number of KM (for vehicles/machinery) or null.
+   - "averageLifespanTime": default number of days before service is needed (e.g. 90 days, 180 days). Return number of days.
+4. Return ONLY a valid JSON object with the following schema:
+{
+  "modelId": "standard_model_id_string",
+  "name": "Standardized Readable Model Name",
+  "averageLifespanUsage": number or null,
+  "averageLifespanTime": number or null,
+  "notes": "Short description of this standardized model"
+}`;
+          const result = await model.generateContent(mappingPrompt);
+          const responseText = result.response.text().replace(/```json|```/g, "").trim();
+          const parsedCatalog = JSON.parse(responseText);
+          if (parsedCatalog && parsedCatalog.modelId) {
+            await storage.getOrCreateGlobalAssetCatalog(parsedCatalog);
+            globalModelId = parsedCatalog.modelId;
+            console.log(`[ai-mapper] Mapped asset to global model ID: "${globalModelId}"`);
+          }
+        } catch (err) {
+          console.error('[ai-mapper] Failed to map asset to global taxonomy:', err);
+        }
+      }
+
+      const newAsset: Asset & { globalModelId?: string | null } = {
         id: newId(),
         userId: req.uid,
         name,
@@ -311,7 +365,8 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         description,
         purchaseDate,
         odometer,
-        useLevel: useLevel || 'NORMAL'
+        useLevel: useLevel || 'NORMAL',
+        globalModelId: globalModelId
       };
       
       await storage.addAsset(req.uid, newAsset);
@@ -326,9 +381,10 @@ If the product has a visible barcode or brand name, prioritize that for the asse
         timestamp: new Date().toISOString()
       });
       
-      auditLog(req.uid, 'CREATE_ASSET', newAsset.id, { name });
+      auditLog(req.uid, 'CREATE_ASSET', newAsset.id, { name, globalModelId });
       res.json(newAsset);
     } catch (err) {
+      console.error("[api] Create Asset error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -478,17 +534,20 @@ If the product has a visible barcode or brand name, prioritize that for the asse
       const component = await storage.getComponent(req.uid, componentId);
       if (!component) return res.status(404).json({ error: "Component not found" });
 
+      const asset = await storage.getAsset(req.uid, component.assetId);
       const actualUsage = component.currentAccumulatedUsage;
       const usedValue = metricValue != null ? Number(metricValue) : actualUsage;
 
-      const newLog: ServiceLog = {
+      // ML-Ready Feature Collection: Log use level of asset at the time of service
+      const newLog: ServiceLog & { useLevelAtService?: string | null } = {
         id: newId(),
         userId: req.uid,
         componentId,
         timestamp: new Date().toISOString(),
         actualMetricValue: usedValue,
         notes,
-        cost
+        cost,
+        useLevelAtService: asset?.useLevel || 'NORMAL'
       };
       
       await storage.addLog(req.uid, newLog);
@@ -500,7 +559,28 @@ If the product has a visible barcode or brand name, prioritize that for the asse
 
       if (component.trackingMode === TrackingMode.AUTO_EWMA && usedValue > 0) {
         const oldPredicted = component.currentPredictedInterval || 1000;
-        updates.currentPredictedInterval = calculateNextEWMA(usedValue, oldPredicted);
+        
+        // Crowdsourced baseline extraction (Bayesian blend prior)
+        let globalAverageLifespan: number | null = null;
+        if (asset?.globalModelId && storage.getGlobalAssetCatalogItem) {
+          try {
+            const catalogItem = await storage.getGlobalAssetCatalogItem(asset.globalModelId);
+            if (catalogItem) {
+              globalAverageLifespan = catalogItem.averageLifespanUsage || null;
+            }
+          } catch (err) {
+            console.error('[service-log] Failed to retrieve global catalog baseline:', err);
+          }
+        }
+
+        const useLevel = asset?.useLevel || 'NORMAL';
+        updates.currentPredictedInterval = calculateNextEWMA(
+          usedValue, 
+          oldPredicted, 
+          useLevel, 
+          globalAverageLifespan
+        );
+        console.log(`[predictive-engine] Component "${component.name}" predicted interval updated: ${oldPredicted} -> ${updates.currentPredictedInterval} (useLevel: ${useLevel}, globalBaseline: ${globalAverageLifespan})`);
       }
 
       if (cost != null) {
@@ -513,6 +593,7 @@ If the product has a visible barcode or brand name, prioritize that for the asse
       const updatedComponent = await storage.getComponent(req.uid, componentId);
       res.json({ success: true, component: updatedComponent, log: newLog });
     } catch (err) {
+      console.error("[api] Log Service error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });

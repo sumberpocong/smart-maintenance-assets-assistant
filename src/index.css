@@ -19,20 +19,20 @@
 }
 
 .dark {
-  --app-bg-val: #020617;
-  --app-ink-val: #f8fafc;
-  --app-muted-val: #94a3b8;
-  --theme-white: #020617;
-  --theme-slate-50: #0f172a;
-  --theme-slate-100: #1e293b;
-  --theme-slate-200: #334155;
-  --theme-slate-300: #475569;
-  --theme-slate-400: #94a3b8;
-  --theme-slate-500: #cbd5e1;
-  --theme-slate-800: #e2e8f0;
-  --theme-slate-900: #f1f5f9;
-  --theme-slate-950: #ffffff;
-  --theme-slate-950-70: rgba(248, 250, 252, 0.8);
+  --app-bg-val: #121212; /* Premium sleek charcoal background */
+  --app-ink-val: #FFFFFF; /* Crisp white primary text */
+  --app-muted-val: #8E8E93; /* Muted gray text */
+  --theme-white: #1C1C1E; /* Lighter charcoal for cards/containers */
+  --theme-slate-50: #1C1C1E;
+  --theme-slate-100: #2C2C2E; /* Slate border and secondary lines */
+  --theme-slate-200: #3A3A3C; /* Slate inactive tab/badge bg */
+  --theme-slate-300: #48484A; /* Dividers */
+  --theme-slate-400: #8E8E93;
+  --theme-slate-500: #AEAEB2;
+  --theme-slate-800: #E5E5EA;
+  --theme-slate-900: #F2F2F7;
+  --theme-slate-950: #FFFFFF;
+  --theme-slate-950-70: rgba(255, 255, 255, 0.8);
 }
 
 @theme {
@@ -66,13 +66,6 @@
   body {
     @apply text-app-ink font-sans antialiased transition-colors duration-300;
     background-color: var(--app-bg-val);
-    background-image: radial-gradient(at 0% 0%, rgba(226, 232, 240, 0.7) 0px, transparent 50%), 
-                      radial-gradient(at 100% 100%, rgba(241, 245, 249, 1) 0px, transparent 50%);
-    background-attachment: fixed;
-  }
-  .dark body {
-    background-image: radial-gradient(at 0% 0%, rgba(30, 41, 59, 0.7) 0px, transparent 50%), 
-                      radial-gradient(at 100% 100%, rgba(2, 6, 23, 1) 0px, transparent 50%);
   }
 }
 

@@ -1,0 +1,7 @@
+# Custom .gcloudignore to allow .env in the build stage
+node_modules/
+.git/
+.github/
+dist/
+dist-server/
+*.log
