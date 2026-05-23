@@ -838,13 +838,13 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-app-bg text-app-ink flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B0F19] text-app-ink flex items-center justify-center">
         <motion.div 
           animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} 
           transition={{ repeat: Infinity, duration: 1.5 }}
         >
           <img 
-            src="/images/rabet_logo_transparent_192px.png" 
+            src="/images/logo_glow.png" 
             alt="Rabet Logo" 
             className="w-16 h-16 object-contain" 
           />
@@ -863,18 +863,18 @@ export default function App() {
           <RotateCcw className="w-8 h-8 text-app-smart animate-spin" />
         </div>
       ) : !user ? (
-        <div className="flex-1 flex items-center justify-center p-6 bg-slate-50 dark:bg-neutral-950">
+        <div className="flex-1 flex items-center justify-center p-6 bg-gradient-to-b from-[#090D1A] to-[#121829]">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md bg-white dark:bg-neutral-900 p-8 rounded-[2.5rem] shadow-shadow-enterprise-lg text-center border border-slate-100 dark:border-neutral-800"
+            className="w-full max-w-md bg-[#131A30]/80 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-center border border-white/5"
           >
             {!auth && (
-              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/30 rounded-2xl flex gap-3 text-left">
+              <div className="mb-6 p-4 bg-amber-950/20 border border-amber-900/30 rounded-2xl flex gap-3 text-left">
                 <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider mb-1">Firebase Credentials Missing</h3>
-                  <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                  <h3 className="text-xs font-bold text-amber-300 uppercase tracking-wider mb-1">Firebase Credentials Missing</h3>
+                  <p className="text-xs text-amber-400 leading-relaxed">
                     This build is missing Firebase secrets. The app is running in safe mode. Auth & Firestore API features are disabled. Please set VITE_FIREBASE_* secrets on your repository.
                   </p>
                 </div>
@@ -882,19 +882,19 @@ export default function App() {
             )}
             <div className="flex justify-center mb-8">
               <img 
-                src="/images/rabet_logo_transparent_256px.png" 
+                src="/images/logo_glow.png" 
                 alt="Smart Maintenance Logo" 
-                className="w-28 h-auto object-contain drop-shadow-md" 
+                className="w-24 h-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" 
               />
             </div>
-            <h1 className="text-2xl font-black text-app-ink dark:text-white uppercase tracking-tight mb-2">Smart Maintenance</h1>
-            <p className="text-app-muted dark:text-neutral-400 font-medium mb-10 leading-relaxed px-4">
+            <h1 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Smart Maintenance</h1>
+            <p className="text-slate-400 font-medium mb-10 leading-relaxed px-4">
               Your intelligent infrastructure companion. Sign in to manage your assets securely.
             </p>
             <div className="space-y-3">
               <button 
                 onClick={handleLogin}
-                className="w-full py-4 bg-app-ink dark:bg-white dark:text-black text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl hover:opacity-90 cursor-pointer"
+                className="w-full py-4 bg-app-smart text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg hover:bg-blue-600 cursor-pointer"
               >
                 <LogIn className="w-5 h-5" />
                 SIGN IN WITH GOOGLE
@@ -902,24 +902,24 @@ export default function App() {
               
               <button 
                 onClick={handleGuestLogin}
-                className="w-full py-4 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700/80 text-app-ink dark:text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all border border-slate-200/50 dark:border-neutral-700/50 cursor-pointer"
+                className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all border border-white/10 cursor-pointer"
               >
-                <UserIcon className="w-5 h-5 text-slate-500 dark:text-neutral-400" />
+                <UserIcon className="w-5 h-5 text-slate-400" />
                 CONTINUE AS GUEST / DEMO MODE
               </button>
             </div>
-            <p className="mt-8 text-[10px] font-black text-slate-300 dark:text-neutral-600 uppercase tracking-[0.2em]">Enterprise Isolation Active</p>
+            <p className="mt-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Enterprise Isolation Active</p>
           </motion.div>
         </div>
       ) : (
         <>
           {/* Desktop Sidebar Navigation for B2B Fleet Managers */}
-          <div className="hidden lg:flex flex-col w-72 bg-slate-900 text-white p-6 border-r border-slate-800 shrink-0 select-none">
+          <div className="hidden lg:flex flex-col w-72 bg-[#0B0F19] text-white p-6 border-r border-slate-800/40 shrink-0 select-none">
             <div className="flex items-center gap-3 mb-10">
               <img 
-                src="/images/rabet_logo_transparent_192px.png" 
+                src="/images/logo_glow.png" 
                 alt="Rabet Logo" 
-                className="h-10 w-auto object-contain brightness-0 invert" 
+                className="h-10 w-auto object-contain" 
               />
               <div className="flex flex-col">
                 <span className="font-extrabold tracking-tight text-xl text-white">RABET</span>
@@ -982,9 +982,9 @@ export default function App() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <img 
-                    src="/images/rabet_logo_transparent_192px.png" 
+                    src="/images/logo_glow.png" 
                     alt="Rabet Logo" 
-                    className="h-8 w-auto object-contain dark:brightness-0 dark:invert" 
+                    className="h-8 w-auto object-contain" 
                   />
                 </div>
                 <p className="text-app-muted dark:text-neutral-400 text-xs font-medium lowercase">
@@ -1030,9 +1030,9 @@ export default function App() {
                   >
                      <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-white dark:bg-neutral-800 rounded-xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-neutral-700/50">
+                          <div className="w-10 h-10 bg-[#0F172A] rounded-xl flex items-center justify-center shadow-sm border border-slate-800">
                             <img 
-                              src="/images/rabet_logo_transparent_192px.png" 
+                              src="/images/logo_glow.png" 
                               alt="Rabet Logo" 
                               className="w-6 h-6 object-contain" 
                             />
