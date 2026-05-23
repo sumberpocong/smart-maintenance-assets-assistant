@@ -840,14 +840,13 @@ export default function App() {
     return (
       <div className="min-h-screen bg-app-bg text-app-ink flex items-center justify-center">
         <motion.div 
-          animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }} 
-          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-          className="w-20 h-20 bg-slate-100 dark:bg-neutral-800 rounded-[2rem] flex items-center justify-center shadow-sm border border-slate-200/50 dark:border-neutral-700/50"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} 
+          transition={{ repeat: Infinity, duration: 1.5 }}
         >
           <img 
             src="/images/rabet_logo_transparent_192px.png" 
             alt="Rabet Logo" 
-            className="w-12 h-12 object-contain" 
+            className="w-16 h-16 object-contain" 
           />
         </motion.div>
       </div>
@@ -881,16 +880,16 @@ export default function App() {
                 </div>
               </div>
             )}
-            <div className="w-24 h-24 bg-app-smart/10 dark:bg-neutral-800/80 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-sm border border-app-smart/20 dark:border-neutral-700/50">
+            <div className="flex justify-center mb-8">
               <img 
                 src="/images/rabet_logo_transparent_256px.png" 
-                alt="Rabet Logo" 
-                className="w-14 h-14 object-contain" 
+                alt="Smart Maintenance Logo" 
+                className="w-28 h-auto object-contain drop-shadow-md" 
               />
             </div>
-            <h1 className="text-2xl font-black text-app-ink dark:text-white uppercase tracking-tight mb-2">Rabet</h1>
+            <h1 className="text-2xl font-black text-app-ink dark:text-white uppercase tracking-tight mb-2">Smart Maintenance</h1>
             <p className="text-app-muted dark:text-neutral-400 font-medium mb-10 leading-relaxed px-4">
-              Your intelligent infrastructure companion. Sign in to manage and predict asset health with smart ML capabilities.
+              Your intelligent infrastructure companion. Sign in to manage your assets securely.
             </p>
             <div className="space-y-3">
               <button 
@@ -906,7 +905,7 @@ export default function App() {
                 className="w-full py-4 bg-slate-100 dark:bg-neutral-800 hover:bg-slate-200 dark:hover:bg-neutral-700/80 text-app-ink dark:text-white font-black rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all border border-slate-200/50 dark:border-neutral-700/50 cursor-pointer"
               >
                 <UserIcon className="w-5 h-5 text-slate-500 dark:text-neutral-400" />
-                CONTINUE AS GUEST / DEMO
+                CONTINUE AS GUEST / DEMO MODE
               </button>
             </div>
             <p className="mt-8 text-[10px] font-black text-slate-300 dark:text-neutral-600 uppercase tracking-[0.2em]">Enterprise Isolation Active</p>
